@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.FilePath;
@@ -70,7 +69,7 @@ class FreestyleTest {
     }
 
     @Test
-    void postsEmbedAndUploadsArchivedJar(JenkinsRule r) throws Exception {
+    void postsOneCardWithTheArchivedJarInside(JenkinsRule r) throws Exception {
         try (FakeDiscord discord = new FakeDiscord()) {
             TestSupport.registerWebhook(discord);
             DevBuildPublisher publisher = new DevBuildPublisher();
@@ -82,7 +81,59 @@ class FreestyleTest {
 
             FreeStyleBuild build = r.buildAndAssertSuccess(p);
 
-            // Default placement AFTER_EMBED: the embed first, then the files in a second message.
+            // Default placement IN_EMBED: one Components V2 message with the file inside the card.
+            FakeDiscord.Request request = discord.only();
+            assertTrue(request.isMultipart());
+            assertEquals("true", request.query().get("with_components"));
+            JSONObject payload = request.payload();
+            assertTrue(request.isComponentsV2());
+            assertFalse(payload.has("embeds"));
+            assertFalse(payload.has("content"));
+            assertFalse(payload.has("tts"));
+            JSONObject card = request.card();
+            assertEquals(0x2ECC71, card.getInt("accent_color"));
+            assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, request.cardThumbnail());
+            assertTrue(request.cardTexts().contains("### [app #1](" + r.getURL() + "job/app/1/)"), request.cardText());
+            assertEquals("app #1", request.cardTitle());
+            String text = request.cardText();
+            assertTrue(text.contains("**Result:** Success\n**Duration:** "), text);
+            assertTrue(text.contains("**Artifacts**\n[app-1.0.jar](" + r.getURL()
+                    + "job/app/1/artifact/build/libs/app-1.0.jar)"), text);
+            assertFalse(text.contains("sources"), text);
+            assertTrue(request.cardTexts().get(request.cardTexts().size() - 1).matches("-# <t:\\d+:f>"), text);
+
+            assertEquals(List.of("app-1.0.jar"), request.cardFiles());
+            List<FakeDiscord.Part> files = request.files();
+            assertEquals(1, files.size());
+            assertEquals("app-1.0.jar", files.get(0).filename());
+            assertArrayEquals(jar, files.get(0).content());
+            JSONArray attachments = payload.getJSONArray("attachments");
+            assertEquals(1, attachments.size());
+            assertEquals("app-1.0.jar", attachments.getJSONObject(0).getString("filename"));
+
+            DevBuildAction action = build.getAction(DevBuildAction.class);
+            assertNotNull(action);
+            assertEquals(1, action.getMessageIds().size());
+        }
+    }
+
+    @Test
+    void afterEmbedPlacementPostsTheEmbedThenTheFiles(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            TestSupport.registerWebhook(discord);
+            ArtifactSettings artifactSettings = new ArtifactSettings();
+            artifactSettings.setPlacement(FilePlacement.AFTER_EMBED);
+            DevBuildPublisher publisher = new DevBuildPublisher();
+            publisher.setWebhookName(TestSupport.WEBHOOK_NAME);
+            publisher.setArtifacts(artifactSettings);
+            byte[] jar = "jar-content".getBytes(StandardCharsets.UTF_8);
+            FreeStyleProject p = project(r, Map.of(
+                    "build/libs/app-1.0.jar", jar,
+                    "build/libs/app-1.0-sources.jar", "sources".getBytes(StandardCharsets.UTF_8)), publisher);
+
+            FreeStyleBuild build = r.buildAndAssertSuccess(p);
+
+            // AFTER_EMBED: the classic embed first, then the files in a second message.
             List<FakeDiscord.Request> requests = discord.requests();
             assertEquals(2, requests.size());
             FakeDiscord.Request request = requests.get(0);
@@ -106,6 +157,8 @@ class FreestyleTest {
             assertTrue(filesMessage.isMultipart());
             assertFalse(filesMessage.payload().has("embeds"));
             assertFalse(filesMessage.payload().has("content"));
+            assertFalse(filesMessage.payload().has("components"));
+            assertFalse(request.query().containsKey("with_components"));
             assertTrue(filesMessage.receivedAtMillis() >= request.receivedAtMillis());
             List<FakeDiscord.Part> files = filesMessage.files();
             assertEquals(1, files.size());
@@ -139,9 +192,10 @@ class FreestyleTest {
 
             FakeDiscord.Request request = discord.only();
             assertFalse(request.isMultipart());
-            assertEquals(0xE74C3C, request.embed().getInt("color"));
-            assertEquals("Failure", request.field("Result").getString("value"));
-            assertTrue(request.field("Artifacts").getString("value").contains("(not attached)"));
+            assertEquals(0xE74C3C, request.card().getInt("accent_color"));
+            assertTrue(request.cardText().contains("**Result:** Failure"), request.cardText());
+            assertTrue(request.cardText().contains("(not attached)"), request.cardText());
+            assertTrue(request.cardFiles().isEmpty());
         }
     }
 
@@ -163,18 +217,23 @@ class FreestyleTest {
 
             r.buildAndAssertSuccess(p);
 
+            // The first batch goes inside the card; further batches follow as classic messages.
             List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(4, requests.size());
-            assertTrue(requests.get(0).files().isEmpty());
-            assertEquals(List.of("a.jar"), requests.get(1).files().stream().map(FakeDiscord.Part::filename).toList());
-            assertEquals(List.of("b.jar"), requests.get(2).files().stream().map(FakeDiscord.Part::filename).toList());
-            assertEquals(List.of("c.jar"), requests.get(3).files().stream().map(FakeDiscord.Part::filename).toList());
-            assertTrue(requests.get(0).payload().has("embeds"));
+            assertEquals(3, requests.size());
+            assertTrue(requests.get(0).isComponentsV2());
+            assertEquals(List.of("a.jar"), requests.get(0).cardFiles());
+            assertEquals(List.of("a.jar"), requests.get(0).files().stream().map(FakeDiscord.Part::filename).toList());
+            assertEquals(List.of("b.jar"), requests.get(1).files().stream().map(FakeDiscord.Part::filename).toList());
+            assertEquals(List.of("c.jar"), requests.get(2).files().stream().map(FakeDiscord.Part::filename).toList());
             for (int i = 1; i < requests.size(); i++) {
-                assertFalse(requests.get(i).payload().has("embeds"));
-                assertEquals(1, requests.get(i).payload().getJSONArray("attachments").size());
+                JSONObject followUp = requests.get(i).payload();
+                assertFalse(followUp.has("embeds"));
+                assertFalse(followUp.has("components"));
+                assertFalse(followUp.has("flags"));
+                assertFalse(requests.get(i).query().containsKey("with_components"));
+                assertEquals(1, followUp.getJSONArray("attachments").size());
             }
-            String artifactsField = requests.get(0).field("Artifacts").getString("value");
+            String artifactsField = requests.get(0).cardText();
             assertTrue(artifactsField.contains("[huge.jar](" + r.getURL() + "job/app/1/artifact/build/libs/huge.jar)"
                     + " · 1.5 MiB (not attached)"), artifactsField);
             for (FakeDiscord.Request request : requests) {
@@ -245,7 +304,7 @@ class FreestyleTest {
             r.buildAndAssertSuccess(p);
             FakeDiscord.Request request = discord.only();
             assertFalse(request.isMultipart());
-            assertNull(request.field("Artifacts"));
+            assertFalse(request.cardText().contains("Artifacts"), request.cardText());
         }
     }
 

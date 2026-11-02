@@ -35,6 +35,12 @@ public final class FakeDiscord implements AutoCloseable {
     public static final String CHANNEL_ID = "555000000000000000";
     public static final String NEW_THREAD_ID = "777000000000000001";
 
+    public static final int COMPONENTS_V2_FLAG = 1 << 15;
+
+    private static final int SECTION = 9;
+    private static final int TEXT_DISPLAY = 10;
+    private static final int FILE = 13;
+    private static final int CONTAINER = 17;
     private static final Pattern BOUNDARY = Pattern.compile("boundary=([^;]+)");
     private static final Pattern NAME = Pattern.compile("name=\"([^\"]*)\"");
     private static final Pattern FILENAME = Pattern.compile("filename=\"([^\"]*)\"");
@@ -94,6 +100,89 @@ public final class FakeDiscord implements AutoCloseable {
                 }
             }
             return null;
+        }
+
+        /** Whether the message is a Components V2 message. */
+        public boolean isComponentsV2() {
+            return (payload().optInt("flags") & COMPONENTS_V2_FLAG) != 0;
+        }
+
+        /** The top-level Text Display above the card (the message text), or {@code null}. */
+        public String messageText() {
+            JSONArray components = payload().getJSONArray("components");
+            JSONObject first = components.getJSONObject(0);
+            return first.getInt("type") == TEXT_DISPLAY ? first.getString("content") : null;
+        }
+
+        /** The Container of a Components V2 message. */
+        public JSONObject card() {
+            JSONArray components = payload().getJSONArray("components");
+            for (int i = 0; i < components.size(); i++) {
+                if (components.getJSONObject(i).getInt("type") == CONTAINER) {
+                    return components.getJSONObject(i);
+                }
+            }
+            throw new AssertionError("No container in " + components);
+        }
+
+        /** Every Text Display in the card, in order, including those in a Section. */
+        public List<String> cardTexts() {
+            List<String> texts = new ArrayList<>();
+            collectTexts(card().getJSONArray("components"), texts);
+            return texts;
+        }
+
+        /** All card texts joined by newlines. */
+        public String cardText() {
+            return String.join("\n", cardTexts());
+        }
+
+        /** The title label of the card, without the Markdown heading and link. */
+        public String cardTitle() {
+            String heading = cardTexts().stream().filter(t -> t.startsWith("### ")).findFirst()
+                    .orElseThrow(() -> new AssertionError("No title in " + cardTexts()))
+                    .substring(4);
+            if (heading.startsWith("[")) {
+                heading = heading.substring(1, heading.lastIndexOf("]("));
+            }
+            return heading.replace("\\[", "[").replace("\\]", "]");
+        }
+
+        /** The thumbnail URL of the card header, or {@code null}. */
+        public String cardThumbnail() {
+            JSONArray children = card().getJSONArray("components");
+            for (int i = 0; i < children.size(); i++) {
+                JSONObject child = children.getJSONObject(i);
+                if (child.getInt("type") == SECTION && child.has("accessory")) {
+                    return child.getJSONObject("accessory").getJSONObject("media").getString("url");
+                }
+            }
+            return null;
+        }
+
+        /** Filenames referenced by the File components of the card. */
+        public List<String> cardFiles() {
+            List<String> names = new ArrayList<>();
+            JSONArray children = card().getJSONArray("components");
+            for (int i = 0; i < children.size(); i++) {
+                JSONObject child = children.getJSONObject(i);
+                if (child.getInt("type") == FILE) {
+                    names.add(child.getJSONObject("file").getString("url").replaceFirst("^attachment://", ""));
+                }
+            }
+            return names;
+        }
+
+        private static void collectTexts(JSONArray components, List<String> texts) {
+            for (int i = 0; i < components.size(); i++) {
+                JSONObject component = components.getJSONObject(i);
+                if (component.getInt("type") == TEXT_DISPLAY) {
+                    texts.add(component.getString("content"));
+                }
+                if (component.has("components")) {
+                    collectTexts(component.getJSONArray("components"), texts);
+                }
+            }
         }
     }
 

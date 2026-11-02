@@ -57,11 +57,10 @@ class FolderTest {
 
             WorkflowRun run = r.buildAndAssertSuccess(job);
 
-            List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(2, requests.size());
-            assertEquals("app #1", requests.get(0).embed().getString("title"));
-            assertEquals("team.jar", requests.get(1).files().get(0).filename());
-            assertEquals("team jar", requests.get(1).files().get(0).text());
+            FakeDiscord.Request request = discord.only();
+            assertEquals("app #1", request.cardTitle());
+            assertEquals("team.jar", request.files().get(0).filename());
+            assertEquals("team jar", request.files().get(0).text());
             assertNull(run.getAction(DevBuildAction.class));
             r.assertLogContains("[DevBuild] Posting SUCCESS", run);
         }
@@ -77,14 +76,14 @@ class FolderTest {
 
             WorkflowRun run = r.buildAndAssertSuccess(job);
 
-            assertEquals(2, discord.requests().size(), "embed message and files message from the step only");
-            assertEquals("from step", discord.requests().get(0).payload().getString("content"));
+            assertEquals(1, discord.requests().size(), "one card from the step only");
+            assertEquals("from step", discord.requests().get(0).messageText());
             r.assertLogContains("Discord step already ran for this build; not posting again", run);
 
             DevBuildFolderProperty property = folder.getProperties().get(DevBuildFolderProperty.class);
             property.setSkipIfStepUsed(false);
             r.buildAndAssertSuccess(job);
-            assertEquals(6, discord.requests().size(), "skipIfStepUsed=false posts from both the step and the listener");
+            assertEquals(3, discord.requests().size(), "skipIfStepUsed=false posts from both the step and the listener");
         }
     }
 
@@ -141,8 +140,8 @@ class FolderTest {
             // The inner folder is the nearest level; it auto-publishes but skips because the step already ran.
             r.assertLogContains("not posting again", run);
             FakeDiscord.Request request = discord.only();
-            assertEquals("inner 1", request.embed().getString("title"));
-            assertEquals("global content", request.payload().getString("content"));
+            assertEquals("inner 1", request.cardTitle());
+            assertEquals("global content", request.messageText());
             assertEquals("Global bot", request.payload().getString("username"));
             assertEquals("1234567890123456789", request.query().get("thread_id"), "thread override from inner folder");
         }
@@ -163,7 +162,7 @@ class FolderTest {
 
             r.buildAndAssertSuccess(p);
 
-            assertEquals("job level", discord.only().payload().getString("content"));
+            assertEquals("job level", discord.only().messageText());
 
             property.setAutoPublish(false);
             r.buildAndAssertSuccess(p);
@@ -181,7 +180,7 @@ class FolderTest {
 
             r.buildAndAssertSuccess(job);
 
-            assertEquals("props 1", discord.only().embed().getString("title"));
+            assertEquals("props 1", discord.only().cardTitle());
             assertEquals(TestSupport.WEBHOOK_NAME, job.getProperty(DevBuildJobProperty.class).getWebhookName());
         }
     }
