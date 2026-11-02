@@ -226,6 +226,35 @@ class ConfigRoundtripTest {
     }
 
     @Test
+    void defaultMessageSectionRoundtripsWithTheJenkinsAvatar(JenkinsRule r) throws Exception {
+        FreeStyleProject p = r.createFreeStyleProject();
+        DevBuildPublisher publisher = new DevBuildPublisher();
+        publisher.setMessage(new MessageSettings());
+        p.getPublishersList().add(publisher);
+
+        r.configRoundtrip(p);
+
+        MessageSettings after = p.getPublishersList().get(DevBuildPublisher.class).getMessage();
+        assertEquals(MessageSettings.DEFAULT_AVATAR_URL, after.getAvatarUrl());
+    }
+
+    @Test
+    void blankAvatarRoundtripsAsTheWebhookAvatar(JenkinsRule r) throws Exception {
+        FreeStyleProject p = r.createFreeStyleProject();
+        DevBuildPublisher publisher = new DevBuildPublisher();
+        MessageSettings message = new MessageSettings();
+        message.setAvatarUrl("");
+        publisher.setMessage(message);
+        p.getPublishersList().add(publisher);
+
+        r.configRoundtrip(p);
+
+        assertEquals("", p.getPublishersList().get(DevBuildPublisher.class).getMessage().getAvatarUrl());
+        MessageSettings reloaded = (MessageSettings) Jenkins.XSTREAM2.fromXML(Jenkins.XSTREAM2.toXML(message));
+        assertEquals("", reloaded.getAvatarUrl());
+    }
+
+    @Test
     void blankThumbnailRoundtripsAsNoThumbnail(JenkinsRule r) throws Exception {
         FreeStyleProject p = r.createFreeStyleProject();
         DevBuildPublisher publisher = new DevBuildPublisher();
@@ -248,6 +277,7 @@ class ConfigRoundtripTest {
         try (JenkinsRule.WebClient wc = r.createWebClient()) {
             String page = wc.getPage(p, "configure").getWebResponse().getContentAsString();
             assertTrue(page.contains(EmbedSettings.DEFAULT_THUMBNAIL_URL), "thumbnail field is not pre-filled");
+            assertTrue(page.contains(MessageSettings.DEFAULT_AVATAR_URL), "avatar field is not pre-filled");
         }
     }
 
@@ -257,6 +287,10 @@ class ConfigRoundtripTest {
                 "<gg.moonrise.jenkins.devbuild.EmbedSettings><title>Old</title></gg.moonrise.jenkins.devbuild.EmbedSettings>");
         assertEquals("Old", embed.getTitle());
         assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, embed.getThumbnailUrl());
+        MessageSettings message = (MessageSettings) Jenkins.XSTREAM2.fromXML(
+                "<gg.moonrise.jenkins.devbuild.MessageSettings><username>Old</username></gg.moonrise.jenkins.devbuild.MessageSettings>");
+        assertEquals("Old", message.getUsername());
+        assertEquals(MessageSettings.DEFAULT_AVATAR_URL, message.getAvatarUrl());
         ArtifactSettings artifacts = (ArtifactSettings) Jenkins.XSTREAM2.fromXML(
                 "<gg.moonrise.jenkins.devbuild.ArtifactSettings><maxFiles>3</maxFiles></gg.moonrise.jenkins.devbuild.ArtifactSettings>");
         assertEquals(3, artifacts.getMaxFiles());

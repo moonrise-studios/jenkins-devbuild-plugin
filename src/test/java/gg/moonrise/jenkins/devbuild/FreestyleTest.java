@@ -93,6 +93,7 @@ class FreestyleTest {
             JSONObject card = request.card();
             assertEquals(0x2ECC71, card.getInt("accent_color"));
             assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, request.cardThumbnail());
+            assertEquals(MessageSettings.DEFAULT_AVATAR_URL, payload.getString("avatar_url"));
             assertTrue(request.cardTexts().contains("### [app #1](" + r.getURL() + "job/app/1/)"), request.cardText());
             assertEquals("app #1", request.cardTitle());
             String text = request.cardText();
@@ -142,6 +143,7 @@ class FreestyleTest {
             assertFalse(request.payload().has("attachments"));
             JSONObject embed = request.embed();
             assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, embed.getJSONObject("thumbnail").getString("url"));
+            assertEquals(MessageSettings.DEFAULT_AVATAR_URL, request.payload().getString("avatar_url"));
             assertEquals("app #1", embed.getString("title"));
             assertEquals(0x2ECC71, embed.getInt("color"));
             assertEquals(r.getURL() + "job/app/1/", embed.getString("url"));
