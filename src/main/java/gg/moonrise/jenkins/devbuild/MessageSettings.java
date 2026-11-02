@@ -20,9 +20,12 @@ import org.kohsuke.stapler.QueryParameter;
  */
 public class MessageSettings implements Describable<MessageSettings> {
 
+    /** The Jenkins icon, used as the webhook avatar unless another URL or a blank value is configured. */
+    public static final String DEFAULT_AVATAR_URL = "https://cdn.moonrise.gg/api/cdn/download/images/jenkins-icon.png";
+
     private String content = "";
     private String username = "";
-    private String avatarUrl = "";
+    private String avatarUrl = DEFAULT_AVATAR_URL;
     private boolean tts;
     private boolean suppressNotifications;
     private boolean mentionUsers = true;
@@ -53,9 +56,13 @@ public class MessageSettings implements Describable<MessageSettings> {
         this.username = TextUtils.nullToEmpty(username).trim();
     }
 
+    /**
+     * The avatar URL template. Empty means the webhook's own avatar; configurations saved before the default existed
+     * (field absent, so {@code null}) get {@link #DEFAULT_AVATAR_URL}.
+     */
     @NonNull
     public String getAvatarUrl() {
-        return TextUtils.nullToEmpty(avatarUrl);
+        return avatarUrl == null ? DEFAULT_AVATAR_URL : avatarUrl;
     }
 
     @DataBoundSetter
@@ -134,6 +141,11 @@ public class MessageSettings implements Describable<MessageSettings> {
         @Override
         public String getDisplayName() {
             return "Message";
+        }
+
+        @NonNull
+        public String getDefaultAvatarUrl() {
+            return DEFAULT_AVATAR_URL;
         }
 
         public FormValidation doCheckAvatarUrl(@QueryParameter String value) {
