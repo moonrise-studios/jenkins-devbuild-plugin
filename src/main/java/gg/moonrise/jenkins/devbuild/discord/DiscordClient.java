@@ -147,7 +147,7 @@ public final class DiscordClient implements AutoCloseable {
     private HttpRequest buildRequest(URI uri, String payload, @CheckForNull MultipartBody multipart) {
         HttpRequest.Builder builder = ProxyConfiguration.newHttpRequestBuilder(uri)
                 .timeout(timeout)
-                .header("User-Agent", USER_AGENT)
+                .setHeader("User-Agent", USER_AGENT)
                 .header("Accept", "application/json");
         if (multipart == null) {
             builder.header("Content-Type", "application/json; charset=UTF-8")
