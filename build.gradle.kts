@@ -88,9 +88,17 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
     maxHeapSize = "1g"
     systemProperty("jenkins.test.timeout", "300")
+}
+
+tasks.named<Test>("test") {
+    useJUnitPlatform()
+}
+
+// The injected PluginAutomaticTestBuilder suite (Jelly and plugin load checks) is a JUnit 3 suite.
+tasks.named<Test>("generatedJenkinsTest") {
+    useJUnit()
 }
 
 spotbugs {
