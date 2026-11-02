@@ -38,6 +38,7 @@ import org.kohsuke.stapler.QueryParameter;
  * <p>Configuration errors (no webhook, unknown named webhook, missing credential, oversize policy FAIL) fail the
  * step. Discord being unreachable or rejecting the request is logged and does not fail the build.
  */
+@SuppressWarnings("unchecked") // Notifier.getDescriptor() inherits a raw BuildStepDescriptor return type from core
 public class DevBuildPublisher extends Notifier implements SimpleBuildStep, DevBuildConfig {
 
     private static final Set<String> RESULTS = Set.of("SUCCESS", "UNSTABLE", "FAILURE", "ABORTED", "NOT_BUILT");

@@ -1,6 +1,7 @@
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
 import com.github.spotbugs.snom.SpotBugsTask
+import org.jenkinsci.gradle.plugins.accmod.CheckAccessModifierTask
 
 plugins {
     id("org.jenkins-ci.jpi") version "0.57.0"
@@ -131,6 +132,6 @@ tasks.withType<SpotBugsTask>().configureEach {
 tasks.named("spotbugsTest") { enabled = false }
 tasks.named("spotbugsGeneratedJenkinsTest") { enabled = false }
 
-tasks.named<org.jenkinsci.gradle.plugins.accmod.CheckAccessModifierTask>("checkAccessModifier") {
+tasks.named<CheckAccessModifierTask>("checkAccessModifier") {
     ignoreFailures.set(false)
 }

@@ -104,9 +104,4 @@ public final class TemplateVariables {
     public String get(@NonNull String name) {
         return values.get(name);
     }
-
-    @NonNull
-    public Map<String, String> asMap() {
-        return Map.copyOf(values);
-    }
 }

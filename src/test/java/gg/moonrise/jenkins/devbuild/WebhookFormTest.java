@@ -10,7 +10,6 @@ import hudson.model.Item;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
-import java.net.URL;
 import java.util.List;
 import jenkins.model.Jenkins;
 import org.htmlunit.HttpMethod;
@@ -32,7 +31,7 @@ class WebhookFormTest {
 
     private static WebResponse post(JenkinsRule.WebClient wc, JenkinsRule r, String path, List<NameValuePair> params)
             throws Exception {
-        WebRequest request = new WebRequest(new URL(r.getURL(), path), HttpMethod.POST);
+        WebRequest request = new WebRequest(r.getURL().toURI().resolve(path).toURL(), HttpMethod.POST);
         request.setRequestParameters(params);
         wc.addCrumb(request);
         return wc.getPage(request).getWebResponse();
