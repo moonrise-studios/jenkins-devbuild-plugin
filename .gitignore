@@ -1,0 +1,20 @@
+# Maven
+target/
+work/
+*.hpi
+*.jpi
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+nbproject/
+
+# OS
+.DS_Store
