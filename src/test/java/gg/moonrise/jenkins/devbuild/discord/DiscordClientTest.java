@@ -200,7 +200,7 @@ class DiscordClientTest {
         JSONObject payload = request.payload();
         assertEquals(DiscordLimits.FLAG_IS_COMPONENTS_V2, payload.getInt("flags"));
         assertEquals("attachment://my_app.jar", payload.getJSONArray("components").getJSONObject(0)
-                .getJSONArray("components").getJSONObject(2).getJSONObject("file").getString("url"));
+                .getJSONArray("components").getJSONObject(3).getJSONObject("file").getString("url"));
     }
 
     @Test

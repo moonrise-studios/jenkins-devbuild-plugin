@@ -71,7 +71,8 @@ class PipelineTest {
             assertEquals("plugin.jar", request.files().get(0).filename());
             assertEquals("from workspace", request.files().get(0).text());
             String text = request.cardText();
-            assertTrue(text.contains("**Artifacts**\nplugin.jar · 14 B"), text);
+            assertFalse(text.contains("**Artifacts**"), text);
+            assertEquals(List.of("plugin.jar"), request.cardFiles());
         }
     }
 
