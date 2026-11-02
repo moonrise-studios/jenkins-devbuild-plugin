@@ -12,7 +12,7 @@
     <f:optionalProperty field="artifacts" title="${%Default attachment settings}"/>
     <f:optionalProperty field="conditions" title="${%Default notify conditions}"/>
     <f:advanced>
-      <f:entry title="${%Request timeout (seconds)}" field="timeoutSeconds">
+      <f:entry title="${%Request timeout in seconds}" field="timeoutSeconds">
         <f:number default="30" min="1"/>
       </f:entry>
       <f:entry title="${%Maximum retries}" field="maxRetries">

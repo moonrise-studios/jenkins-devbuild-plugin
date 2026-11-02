@@ -12,7 +12,7 @@
   <f:entry title="${%Title link}" field="url">
     <f:textbox default="${'$'}{BUILD_URL}"/>
   </f:entry>
-  <f:advanced title="${%Author, images and footer}">
+  <f:advanced title="${%Author images and footer}">
     <f:entry title="${%Author name}" field="authorName">
       <f:textbox/>
     </f:entry>

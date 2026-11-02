@@ -16,7 +16,7 @@
     <f:checkbox title="${%Not built}"/>
   </f:entry>
   <f:entry field="notifyOnBackToNormal">
-    <f:checkbox title="${%Back to normal (success after a non-successful build)}" default="true"/>
+    <f:checkbox title="${%Back to normal: a success after a failed or unstable build}" default="true"/>
   </f:entry>
   <f:entry title="${%Branch pattern}" field="branchPattern">
     <f:textbox/>

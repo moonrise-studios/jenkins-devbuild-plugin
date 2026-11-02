@@ -15,7 +15,7 @@
   <f:entry title="${%Maximum files}" field="maxFiles">
     <f:number default="10"/>
   </f:entry>
-  <f:entry title="${%Upload budget per message (MiB)}" field="maxUploadSizeMb">
+  <f:entry title="${%Upload budget per message in MiB}" field="maxUploadSizeMb">
     <f:number default="10"/>
   </f:entry>
   <f:entry field="onlyOnSuccess">

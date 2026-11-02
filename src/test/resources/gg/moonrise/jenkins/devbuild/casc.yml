@@ -1,0 +1,40 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: discord-devbuilds
+              description: "Discord #dev-builds webhook"
+              secret: "https://discord.com/api/webhooks/123456789012345678/casc-token"
+unclassified:
+  discordDevBuild:
+    defaultWebhookName: devbuilds
+    timeoutSeconds: 20
+    maxRetries: 5
+    webhooks:
+      - name: devbuilds
+        webhook:
+          credentialsId: discord-devbuilds
+      - name: releases
+        webhook:
+          credentialsId: discord-devbuilds
+          threadName: "Release ^${BUILD_NUMBER}"
+          appliedTags: "111111111111111111"
+    message:
+      username: "Jenkins"
+      mentionRoles: false
+    embed:
+      footerText: "Built by Jenkins"
+      successColor: "#00FF00"
+      fields:
+        - name: "Version"
+          value: "^${VERSION}"
+          inline: true
+    artifacts:
+      includes: "build/libs/*.jar"
+      oversizePolicy: SKIP
+      maxUploadSizeMb: 8
+    conditions:
+      notifyOnAborted: true
+      branchPattern: "main|release/.*"
