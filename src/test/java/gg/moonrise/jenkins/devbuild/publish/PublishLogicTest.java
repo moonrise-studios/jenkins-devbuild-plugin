@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import gg.moonrise.jenkins.devbuild.ArtifactSettings;
-import gg.moonrise.jenkins.devbuild.NotifyConditions;
-import gg.moonrise.jenkins.devbuild.OversizePolicy;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
+import gg.moonrise.jenkins.devbuild.settings.OversizePolicy;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;
 import hudson.AbortException;
 import hudson.model.Result;

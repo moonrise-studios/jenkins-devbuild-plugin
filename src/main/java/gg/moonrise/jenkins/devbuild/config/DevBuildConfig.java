@@ -1,6 +1,11 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.config;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.MessageSettings;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
 
 /**
  * One level of DevBuild configuration: the step or publisher, a job property, a folder property or the global

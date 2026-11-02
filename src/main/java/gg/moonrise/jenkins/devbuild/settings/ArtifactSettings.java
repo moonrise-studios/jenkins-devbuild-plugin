@@ -1,4 +1,4 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.settings;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;

@@ -1,7 +1,8 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.settings;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import gg.moonrise.jenkins.devbuild.config.DevBuildForms;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;
 import hudson.Extension;
 import hudson.model.Describable;

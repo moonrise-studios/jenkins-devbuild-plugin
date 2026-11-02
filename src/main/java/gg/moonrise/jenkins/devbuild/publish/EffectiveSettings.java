@@ -1,11 +1,11 @@
 package gg.moonrise.jenkins.devbuild.publish;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import gg.moonrise.jenkins.devbuild.ArtifactSettings;
-import gg.moonrise.jenkins.devbuild.DiscordWebhook;
-import gg.moonrise.jenkins.devbuild.EmbedSettings;
-import gg.moonrise.jenkins.devbuild.MessageSettings;
-import gg.moonrise.jenkins.devbuild.NotifyConditions;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.MessageSettings;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
 import java.time.Duration;
 
 /**

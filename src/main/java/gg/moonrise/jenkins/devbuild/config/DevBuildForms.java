@@ -1,9 +1,10 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.config;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import gg.moonrise.jenkins.devbuild.discord.WebhookUrls;
 import gg.moonrise.jenkins.devbuild.util.ColorUtils;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;
+import gg.moonrise.jenkins.devbuild.webhook.NamedWebhook;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.util.regex.Pattern;

@@ -1,4 +1,4 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.config;
 
 /**
  * A configuration level that can publish automatically when a build completes (job and folder properties).

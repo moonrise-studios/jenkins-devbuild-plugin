@@ -1,11 +1,16 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.config;
 
 import com.cloudbees.hudson.plugins.folder.AbstractFolder;
 import com.cloudbees.hudson.plugins.folder.AbstractFolderProperty;
 import com.cloudbees.hudson.plugins.folder.AbstractFolderPropertyDescriptor;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.MessageSettings;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
 import hudson.Extension;
 import hudson.util.ListBoxModel;
 import net.sf.json.JSONObject;

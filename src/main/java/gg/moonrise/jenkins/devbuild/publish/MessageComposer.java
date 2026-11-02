@@ -1,11 +1,11 @@
 package gg.moonrise.jenkins.devbuild.publish;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import gg.moonrise.jenkins.devbuild.DiscordWebhook;
-import gg.moonrise.jenkins.devbuild.EmbedField;
-import gg.moonrise.jenkins.devbuild.EmbedSettings;
-import gg.moonrise.jenkins.devbuild.FilePlacement;
-import gg.moonrise.jenkins.devbuild.MessageSettings;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
+import gg.moonrise.jenkins.devbuild.settings.EmbedField;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.FilePlacement;
+import gg.moonrise.jenkins.devbuild.settings.MessageSettings;
 import gg.moonrise.jenkins.devbuild.discord.ComponentCard;
 import gg.moonrise.jenkins.devbuild.discord.DiscordAttachment;
 import gg.moonrise.jenkins.devbuild.discord.DiscordEmbed;

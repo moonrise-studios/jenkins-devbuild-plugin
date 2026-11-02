@@ -2,7 +2,7 @@ package gg.moonrise.jenkins.devbuild.publish;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import gg.moonrise.jenkins.devbuild.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
 import gg.moonrise.jenkins.devbuild.discord.DiscordClient;
 import gg.moonrise.jenkins.devbuild.discord.DiscordResponse;
 import gg.moonrise.jenkins.devbuild.discord.WebhookMessage;

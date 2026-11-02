@@ -5,6 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import gg.moonrise.jenkins.devbuild.config.DevBuildGlobalConfiguration;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.FilePlacement;
+import gg.moonrise.jenkins.devbuild.settings.OversizePolicy;
+import gg.moonrise.jenkins.devbuild.webhook.NamedWebhook;
 import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
