@@ -92,8 +92,12 @@ tasks.withType<Test>().configureEach {
     systemProperty("jenkins.test.timeout", "300")
 }
 
+// CI also runs the tests on a newer JDK: ./gradlew build -PtestJavaVersion=25
+val testJavaVersion = providers.gradleProperty("testJavaVersion").map(String::toInt).orElse(21)
+
 tasks.named<Test>("test") {
     useJUnitPlatform()
+    javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(testJavaVersion.map(JavaLanguageVersion::of)) })
 }
 
 // The injected PluginAutomaticTestBuilder suite (Jelly and plugin load checks) is a JUnit 3 suite.
