@@ -29,6 +29,9 @@ public class EmbedSettings implements Describable<EmbedSettings> {
     public static final String DEFAULT_ABORTED_COLOR = "#95A5A6";
     public static final String DEFAULT_NOT_BUILT_COLOR = "#95A5A6";
     public static final int DEFAULT_MAX_CHANGES = 5;
+    /** The Moonrise Studios logo, shown as the thumbnail unless another URL or a blank value is configured. */
+    public static final String DEFAULT_THUMBNAIL_URL =
+            "https://cdn.moonrise.gg/api/cdn/download/images/Moonrise%20Studios%20Logo%20%281%29.png";
 
     private boolean enabled = true;
     private String title = DEFAULT_TITLE;
@@ -37,7 +40,7 @@ public class EmbedSettings implements Describable<EmbedSettings> {
     private String authorName = "";
     private String authorUrl = "";
     private String authorIconUrl = "";
-    private String thumbnailUrl = "";
+    private String thumbnailUrl = DEFAULT_THUMBNAIL_URL;
     private String imageUrl = "";
     private String footerText = "";
     private String footerIconUrl = "";
@@ -129,9 +132,13 @@ public class EmbedSettings implements Describable<EmbedSettings> {
         this.authorIconUrl = TextUtils.nullToEmpty(authorIconUrl).trim();
     }
 
+    /**
+     * The thumbnail URL template. Empty means no thumbnail; configurations saved before the default existed (field
+     * absent, so {@code null}) get {@link #DEFAULT_THUMBNAIL_URL}.
+     */
     @NonNull
     public String getThumbnailUrl() {
-        return TextUtils.nullToEmpty(thumbnailUrl);
+        return thumbnailUrl == null ? DEFAULT_THUMBNAIL_URL : thumbnailUrl;
     }
 
     @DataBoundSetter
@@ -344,6 +351,11 @@ public class EmbedSettings implements Describable<EmbedSettings> {
 
         public FormValidation doCheckAuthorIconUrl(@QueryParameter String value) {
             return DevBuildForms.checkTemplateUrl(value);
+        }
+
+        @NonNull
+        public String getDefaultThumbnailUrl() {
+            return DEFAULT_THUMBNAIL_URL;
         }
 
         public FormValidation doCheckThumbnailUrl(@QueryParameter String value) {

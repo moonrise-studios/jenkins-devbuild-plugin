@@ -23,7 +23,7 @@
       <f:textbox/>
     </f:entry>
     <f:entry title="${%Thumbnail URL}" field="thumbnailUrl">
-      <f:textbox/>
+      <f:textbox default="${descriptor.defaultThumbnailUrl}"/>
     </f:entry>
     <f:entry title="${%Image URL}" field="imageUrl">
       <f:textbox/>
