@@ -12,6 +12,9 @@
   <f:entry title="${%Take files from}" field="source">
     <f:enum>${it.displayName}</f:enum>
   </f:entry>
+  <f:entry title="${%Where to put the files}" field="placement">
+    <f:enum>${it.displayName}</f:enum>
+  </f:entry>
   <f:entry title="${%Maximum files}" field="maxFiles">
     <f:number default="10"/>
   </f:entry>

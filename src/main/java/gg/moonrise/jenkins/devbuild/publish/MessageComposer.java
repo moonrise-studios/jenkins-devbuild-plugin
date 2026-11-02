@@ -4,6 +4,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import gg.moonrise.jenkins.devbuild.DiscordWebhook;
 import gg.moonrise.jenkins.devbuild.EmbedField;
 import gg.moonrise.jenkins.devbuild.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.FilePlacement;
 import gg.moonrise.jenkins.devbuild.MessageSettings;
 import gg.moonrise.jenkins.devbuild.discord.DiscordEmbed;
 import gg.moonrise.jenkins.devbuild.discord.DiscordLimits;
@@ -18,8 +19,9 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Builds the webhook messages for a build: the main message with the embed and the first batch of files, then one
- * follow-up message per remaining batch.
+ * Builds the webhook messages for a build: the main message with the embed, then one follow-up message per batch of
+ * files. With {@link FilePlacement#WITH_EMBED}, or without an embed, the first batch goes with the main message
+ * instead.
  */
 public final class MessageComposer {
 
@@ -41,14 +43,16 @@ public final class MessageComposer {
 
     /**
      * Composes all messages. The first message creates the forum post when {@code threadName} is set and no
-     * {@code threadId} is configured; follow-ups never carry a thread name.
+     * {@code threadId} is configured; follow-ups never carry a thread name, tags or the message content.
      */
     @NonNull
     public static List<WebhookMessage> compose(@NonNull Input input) {
-        List<WebhookMessage> messages = new ArrayList<>();
-        messages.add(mainMessage(input));
         List<List<BuildFile>> batches = input.plan().batches();
-        for (int i = 1; i < batches.size(); i++) {
+        // Index of the first batch sent as a follow-up; the batches before it go with the main message.
+        int firstFollowUp = batches.isEmpty() || separateFiles(input) ? 0 : 1;
+        List<WebhookMessage> messages = new ArrayList<>();
+        messages.add(mainMessage(input, firstFollowUp == 1 ? batches.get(0) : List.of()));
+        for (int i = firstFollowUp; i < batches.size(); i++) {
             WebhookMessage followUp = baseMessage(input.settings().message(), input.variables());
             followUp.allowedMentions(List.of());
             batches.get(i).forEach(file -> followUp.attachment(file.toAttachment()));
@@ -57,7 +61,16 @@ public final class MessageComposer {
         return messages;
     }
 
-    private static WebhookMessage mainMessage(Input input) {
+    /**
+     * Whether every batch goes into follow-ups so the files show below the embed. Without an embed the files stay in
+     * the main message, which would otherwise be empty.
+     */
+    private static boolean separateFiles(Input input) {
+        EffectiveSettings settings = input.settings();
+        return settings.artifacts().getPlacement() == FilePlacement.AFTER_EMBED && settings.embed().isEnabled();
+    }
+
+    private static WebhookMessage mainMessage(Input input, List<BuildFile> files) {
         EffectiveSettings settings = input.settings();
         MessageSettings messageSettings = settings.message();
         TemplateVariables variables = input.variables();
@@ -83,9 +96,7 @@ public final class MessageComposer {
         }
         message.content(content);
 
-        if (!input.plan().batches().isEmpty()) {
-            input.plan().batches().get(0).forEach(file -> message.attachment(file.toAttachment()));
-        }
+        files.forEach(file -> message.attachment(file.toAttachment()));
         return message;
     }
 

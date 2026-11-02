@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * How the selected files are delivered.
  *
- * @param batches files uploaded per message; the first batch goes with the embed, the rest in follow-up messages
+ * @param batches files uploaded per message, in order; {@link MessageComposer} decides which message carries each
  * @param linked  files listed in the embed (with a Jenkins link when archived) but not uploaded
  */
 public record UploadPlan(@NonNull List<List<BuildFile>> batches, @NonNull List<BuildFile> linked) {

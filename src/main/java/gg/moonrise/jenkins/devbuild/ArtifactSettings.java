@@ -34,6 +34,7 @@ public class ArtifactSettings implements Describable<ArtifactSettings> {
     private boolean onlyOnSuccess = true;
     private boolean attachOnUnstable;
     private OversizePolicy oversizePolicy = OversizePolicy.LINK;
+    private FilePlacement placement = FilePlacement.AFTER_EMBED;
 
     @DataBoundConstructor
     public ArtifactSettings() {
@@ -122,6 +123,20 @@ public class ArtifactSettings implements Describable<ArtifactSettings> {
     @DataBoundSetter
     public void setOversizePolicy(@CheckForNull OversizePolicy oversizePolicy) {
         this.oversizePolicy = oversizePolicy == null ? OversizePolicy.LINK : oversizePolicy;
+    }
+
+    /**
+     * Where the files go relative to the embed. Configurations saved before this option existed load as
+     * {@link FilePlacement#AFTER_EMBED}.
+     */
+    @NonNull
+    public FilePlacement getPlacement() {
+        return placement == null ? FilePlacement.AFTER_EMBED : placement;
+    }
+
+    @DataBoundSetter
+    public void setPlacement(@CheckForNull FilePlacement placement) {
+        this.placement = placement == null ? FilePlacement.AFTER_EMBED : placement;
     }
 
     /**
