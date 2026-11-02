@@ -1,6 +1,13 @@
-# Maven
-target/
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+
+# Jenkins dev server
 work/
+
+# Plugin archives
 *.hpi
 *.jpi
 
@@ -14,7 +21,8 @@ work/
 .project
 .settings/
 .factorypath
-nbproject/
+bin/
+out/
 
 # OS
 .DS_Store
