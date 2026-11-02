@@ -1,0 +1,5 @@
+<div>
+  Posts the build to a Discord webhook as an embed and uploads the matching files (by default <code>**/*.jar</code>) as attachments.
+  <p>Every setting is optional. Unset settings are inherited from the job property, then parent folders (nearest first), then the global configuration, then built-in defaults.</p>
+  <p>In Pipeline use <code>discordDevBuild webhookName: 'devbuilds', artifacts: [includes: 'build/libs/*.jar']</code>. The step works inside and outside <code>node</code>.</p>
+</div>

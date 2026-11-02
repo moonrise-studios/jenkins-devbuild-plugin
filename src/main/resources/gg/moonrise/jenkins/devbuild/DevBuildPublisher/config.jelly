@@ -1,0 +1,16 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry title="${%Named webhook}" field="webhookName">
+    <f:select/>
+  </f:entry>
+  <f:optionalProperty field="webhook" title="${%Use a webhook defined here}"/>
+  <f:optionalProperty field="message" title="${%Customize the message}"/>
+  <f:optionalProperty field="embed" title="${%Customize the embed}"/>
+  <f:optionalProperty field="artifacts" title="${%Customize attached files}"/>
+  <f:optionalProperty field="conditions" title="${%Customize when to notify}"/>
+  <f:advanced>
+    <f:entry title="${%Result to report}" field="result">
+      <f:textbox/>
+    </f:entry>
+  </f:advanced>
+</j:jelly>

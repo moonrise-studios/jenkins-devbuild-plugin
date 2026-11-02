@@ -1,0 +1,5 @@
+<?jelly escape-by-default='true'?>
+<div>
+  Posts build results to a Discord webhook as an embed and uploads the built jar files as Discord attachments.
+  Works with Freestyle, Pipeline and Multibranch Pipeline jobs, with per-job and per-folder configuration.
+</div>

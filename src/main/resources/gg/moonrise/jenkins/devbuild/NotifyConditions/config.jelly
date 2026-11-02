@@ -1,0 +1,24 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry field="notifyOnSuccess">
+    <f:checkbox title="${%Successful builds}" default="true"/>
+  </f:entry>
+  <f:entry field="notifyOnUnstable">
+    <f:checkbox title="${%Unstable builds}" default="true"/>
+  </f:entry>
+  <f:entry field="notifyOnFailure">
+    <f:checkbox title="${%Failed builds}" default="true"/>
+  </f:entry>
+  <f:entry field="notifyOnAborted">
+    <f:checkbox title="${%Aborted builds}"/>
+  </f:entry>
+  <f:entry field="notifyOnNotBuilt">
+    <f:checkbox title="${%Not built}"/>
+  </f:entry>
+  <f:entry field="notifyOnBackToNormal">
+    <f:checkbox title="${%Back to normal (success after a non-successful build)}" default="true"/>
+  </f:entry>
+  <f:entry title="${%Branch pattern}" field="branchPattern">
+    <f:textbox/>
+  </f:entry>
+</j:jelly>

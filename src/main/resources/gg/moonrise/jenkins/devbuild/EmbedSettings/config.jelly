@@ -1,0 +1,82 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry field="enabled">
+    <f:checkbox title="${%Show an embed}" default="true"/>
+  </f:entry>
+  <f:entry title="${%Title}" field="title">
+    <f:textbox default="${'$'}{PROJECT_NAME} #${'$'}{BUILD_NUMBER}"/>
+  </f:entry>
+  <f:entry title="${%Description}" field="description">
+    <f:textarea/>
+  </f:entry>
+  <f:entry title="${%Title link}" field="url">
+    <f:textbox default="${'$'}{BUILD_URL}"/>
+  </f:entry>
+  <f:advanced title="${%Author, images and footer}">
+    <f:entry title="${%Author name}" field="authorName">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Author link}" field="authorUrl">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Author icon URL}" field="authorIconUrl">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Thumbnail URL}" field="thumbnailUrl">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Image URL}" field="imageUrl">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Footer text}" field="footerText">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Footer icon URL}" field="footerIconUrl">
+      <f:textbox/>
+    </f:entry>
+  </f:advanced>
+  <f:entry field="timestamp">
+    <f:checkbox title="${%Add a timestamp}" default="true"/>
+  </f:entry>
+  <f:advanced title="${%Colors}">
+    <f:entry title="${%Success color}" field="successColor">
+      <f:textbox default="#2ECC71"/>
+    </f:entry>
+    <f:entry title="${%Unstable color}" field="unstableColor">
+      <f:textbox default="#F1C40F"/>
+    </f:entry>
+    <f:entry title="${%Failure color}" field="failureColor">
+      <f:textbox default="#E74C3C"/>
+    </f:entry>
+    <f:entry title="${%Aborted color}" field="abortedColor">
+      <f:textbox default="#95A5A6"/>
+    </f:entry>
+    <f:entry title="${%Not built color}" field="notBuiltColor">
+      <f:textbox default="#95A5A6"/>
+    </f:entry>
+  </f:advanced>
+  <f:entry field="showResult">
+    <f:checkbox title="${%Show the result}" default="true"/>
+  </f:entry>
+  <f:entry field="showDuration">
+    <f:checkbox title="${%Show the duration}" default="true"/>
+  </f:entry>
+  <f:entry field="showBranch">
+    <f:checkbox title="${%Show the branch}" default="true"/>
+  </f:entry>
+  <f:entry field="showCommit">
+    <f:checkbox title="${%Show the commit}" default="true"/>
+  </f:entry>
+  <f:entry field="showChanges">
+    <f:checkbox title="${%Show the changes}" default="true"/>
+  </f:entry>
+  <f:entry title="${%Maximum changes listed}" field="maxChanges">
+    <f:number default="5" min="0"/>
+  </f:entry>
+  <f:entry field="showArtifacts">
+    <f:checkbox title="${%List the files}" default="true"/>
+  </f:entry>
+  <f:entry title="${%Custom fields}">
+    <f:repeatableProperty field="fields" add="${%Add field}" minimum="0"/>
+  </f:entry>
+</j:jelly>

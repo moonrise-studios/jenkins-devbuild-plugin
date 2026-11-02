@@ -1,0 +1,20 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+  <f:entry title="${%Webhook URL credential}" field="credentialsId">
+    <c:select/>
+  </f:entry>
+  <f:entry title="${%Webhook URL}" field="webhookUrl">
+    <f:password/>
+  </f:entry>
+  <f:entry title="${%Thread or forum post id}" field="threadId">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%New forum post title}" field="threadName">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Forum tag ids}" field="appliedTags">
+    <f:textbox/>
+  </f:entry>
+  <f:validateButton title="${%Test webhook}" progress="${%Sending test message...}" method="testWebhook"
+                    with="credentialsId,webhookUrl,threadId,threadName,appliedTags"/>
+</j:jelly>

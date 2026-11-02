@@ -1,0 +1,27 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry title="${%Content}" field="content">
+    <f:textarea/>
+  </f:entry>
+  <f:entry title="${%Username}" field="username">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Avatar URL}" field="avatarUrl">
+    <f:textbox/>
+  </f:entry>
+  <f:entry field="tts">
+    <f:checkbox title="${%Text-to-speech}"/>
+  </f:entry>
+  <f:entry field="suppressNotifications">
+    <f:checkbox title="${%Suppress notifications}"/>
+  </f:entry>
+  <f:entry field="mentionUsers">
+    <f:checkbox title="${%Allow user mentions}" default="true"/>
+  </f:entry>
+  <f:entry field="mentionRoles">
+    <f:checkbox title="${%Allow role mentions}" default="true"/>
+  </f:entry>
+  <f:entry field="mentionEveryone">
+    <f:checkbox title="${%Allow @everyone and @here}"/>
+  </f:entry>
+</j:jelly>

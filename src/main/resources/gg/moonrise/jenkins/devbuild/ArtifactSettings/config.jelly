@@ -1,0 +1,30 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry field="enabled">
+    <f:checkbox title="${%Attach files}" default="true"/>
+  </f:entry>
+  <f:entry title="${%Files to attach}" field="includes">
+    <f:textbox default="**/*.jar"/>
+  </f:entry>
+  <f:entry title="${%Files to leave out}" field="excludes">
+    <f:textbox default="**/*-sources.jar, **/*-javadoc.jar"/>
+  </f:entry>
+  <f:entry title="${%Take files from}" field="source">
+    <f:enum>${it.displayName}</f:enum>
+  </f:entry>
+  <f:entry title="${%Maximum files}" field="maxFiles">
+    <f:number default="10"/>
+  </f:entry>
+  <f:entry title="${%Upload budget per message (MiB)}" field="maxUploadSizeMb">
+    <f:number default="10"/>
+  </f:entry>
+  <f:entry field="onlyOnSuccess">
+    <f:checkbox title="${%Attach files only to successful builds}" default="true"/>
+  </f:entry>
+  <f:entry field="attachOnUnstable">
+    <f:checkbox title="${%Also attach files to unstable builds}"/>
+  </f:entry>
+  <f:entry title="${%Files larger than the budget}" field="oversizePolicy">
+    <f:enum>${it.displayName}</f:enum>
+  </f:entry>
+</j:jelly>
