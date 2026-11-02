@@ -218,7 +218,8 @@ class ConfigRoundtripTest {
         r.assertEqualDataBoundBeans(conditions(), after.getConditions());
         assertEquals(12, after.getTimeoutSeconds());
         assertEquals(5, after.getMaxRetries());
-        String xml = Files.readString(r.jenkins.getRootDir().toPath().resolve(DevBuildGlobalConfiguration.class.getName() + ".xml"),
+        String xml = Files.readString(
+                r.jenkins.getRootDir().toPath().resolve("gg.moonrise.jenkins.devbuild.DevBuildGlobalConfiguration.xml"),
                 StandardCharsets.UTF_8);
         assertFalse(xml.contains("very-secret-token"));
         assertTrue(xml.contains("<webhookUrl>{"), "secret should be stored encrypted");
