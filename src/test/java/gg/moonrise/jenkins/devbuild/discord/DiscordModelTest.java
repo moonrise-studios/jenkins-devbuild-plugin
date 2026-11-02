@@ -161,7 +161,7 @@ class DiscordModelTest {
         assertEquals(17, container.getInt("type"));
         assertEquals(0x2ECC71, container.getInt("accent_color"));
         JSONArray children = container.getJSONArray("components");
-        assertEquals(10, children.size());
+        assertEquals(11, children.size());
 
         JSONObject section = children.getJSONObject(0);
         assertEquals(9, section.getInt("type"));
@@ -183,15 +183,40 @@ class DiscordModelTest {
         assertEquals(14, separator.getInt("type"));
         assertTrue(separator.getBoolean("divider"));
         assertEquals(1, separator.getInt("spacing"));
+        assertEquals("**Download here**", children.getJSONObject(6).getString("content"));
         assertEquals(List.of("attachment://app_1.0.jar", "attachment://app_1.0-2.jar", "attachment://lib.jar"),
                 fileUrls(children));
         long epoch = Instant.parse(timestamp).getEpochSecond();
-        assertEquals("-# Jenkins · <t:" + epoch + ":f>", children.getJSONObject(9).getString("content"));
+        assertEquals("-# Jenkins · <t:" + epoch + ":f>", children.getJSONObject(10).getString("content"));
 
         JSONArray attachments = payload.getJSONArray("attachments");
         List<String> uploaded = IntStream.range(0, attachments.size())
                 .mapToObj(i -> "attachment://" + attachments.getJSONObject(i).getString("filename")).toList();
         assertEquals(fileUrls(children), uploaded, "every file component references an uploaded file");
+    }
+
+    @Test
+    void leadingInlineFieldsSitBesideTheThumbnail() {
+        DiscordEmbed embed = new DiscordEmbed().title("app #1").thumbnail("https://example.com/logo.png")
+                .field("Result", "Success", true).field("Branch", "`main`", true)
+                .field("Changes", "- fix", false).applyLimits();
+
+        JSONArray children = JSONArray.fromObject(Json.write(ComponentCard.render(null, embed, List.of())))
+                .getJSONObject(0).getJSONArray("components");
+
+        assertEquals(2, children.size());
+        JSONObject section = children.getJSONObject(0);
+        assertEquals(9, section.getInt("type"));
+        assertEquals(List.of("### app #1", "**Result:** Success\n**Branch:** `main`"),
+                section.getJSONArray("components").stream().map(c -> ((JSONObject) c).getString("content")).toList());
+        assertEquals("**Changes**\n- fix", children.getJSONObject(1).getString("content"));
+
+        DiscordEmbed blockFirst = new DiscordEmbed().title("app #1").thumbnail("https://example.com/logo.png")
+                .field("Changes", "- fix", false).field("Result", "Success", true).applyLimits();
+        JSONArray blockChildren = JSONArray.fromObject(Json.write(ComponentCard.render(null, blockFirst, List.of())))
+                .getJSONObject(0).getJSONArray("components");
+        assertEquals(1, blockChildren.getJSONObject(0).getJSONArray("components").size(),
+                "a leading non-inline field stays below the section");
     }
 
     @Test
@@ -264,8 +289,8 @@ class DiscordModelTest {
 
         assertEquals(DiscordLimits.COMPONENTS_TOTAL, ComponentCard.componentCount(card));
         List<String> texts = texts(card);
-        assertTrue(texts.contains("**n23**\nv"), texts.toString());
-        assertFalse(texts.contains("**n24**\nv"), texts.toString());
+        assertTrue(texts.contains("**n22**\nv"), texts.toString());
+        assertFalse(texts.contains("**n23**\nv"), texts.toString());
         assertEquals("-# f", texts.get(texts.size() - 1));
     }
 

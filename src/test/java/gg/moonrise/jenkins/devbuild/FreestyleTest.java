@@ -105,8 +105,8 @@ class FreestyleTest {
             assertEquals("app #1", request.cardTitle());
             String text = request.cardText();
             assertTrue(text.contains("**Result:** Success\n**Duration:** "), text);
-            assertTrue(text.contains("**Artifacts**\n[app-1.0.jar](" + r.getURL()
-                    + "job/app/1/artifact/build/libs/app-1.0.jar)"), text);
+            assertFalse(text.contains("**Artifacts**"), "files in the card are not listed again: " + text);
+            assertTrue(request.cardTexts().contains("**Download here**"), text);
             assertFalse(text.contains("sources"), text);
             assertTrue(request.cardTexts().get(request.cardTexts().size() - 1).matches("-# <t:\\d+:f>"), text);
 
@@ -245,6 +245,8 @@ class FreestyleTest {
             String artifactsField = requests.get(0).cardText();
             assertTrue(artifactsField.contains("[huge.jar](" + r.getURL() + "job/app/1/artifact/build/libs/huge.jar)"
                     + " · 1.5 MiB (not attached)"), artifactsField);
+            assertFalse(artifactsField.contains("[a.jar]("), "the file in the card is not listed: " + artifactsField);
+            assertTrue(artifactsField.contains("[b.jar]("), artifactsField);
             for (FakeDiscord.Request request : requests) {
                 long total = request.files().stream().mapToLong(f -> f.content().length).sum();
                 assertTrue(total <= 1024 * 1024, "batch over budget: " + total);

@@ -103,7 +103,7 @@ public final class MessageComposer {
         }
         message.tts(messageSettings.isTts());
         if (embedSettings.isEnabled()) {
-            message.embed(buildEmbed(input).applyLimits());
+            message.embed(buildEmbed(input, List.of()).applyLimits());
         } else if (!input.plan().linked().isEmpty()) {
             content = appendLines(content, ArtifactListFormatter.linkedLines(input.plan().linked()));
         }
@@ -121,7 +121,8 @@ public final class MessageComposer {
      * message untouched, when the card would be empty.
      */
     private static boolean addCard(WebhookMessage message, Input input, String content, List<BuildFile> files) {
-        DiscordEmbed embed = buildEmbed(input).applyLimits();
+        // Files shown as download cards are left out of the Artifacts field so they are not listed twice.
+        DiscordEmbed embed = buildEmbed(input, files).applyLimits();
         // The card references each file by name, so both use the same safe, unique names.
         List<DiscordAttachment> attachments = ComponentCard.withUniqueSafeNames(
                 files.stream().map(BuildFile::toAttachment).toList());
@@ -144,7 +145,10 @@ public final class MessageComposer {
         return message;
     }
 
-    private static DiscordEmbed buildEmbed(Input input) {
+    /**
+     * Builds the embed. Files in {@code inCard} are shown inside the card and are not listed in the Artifacts field.
+     */
+    private static DiscordEmbed buildEmbed(Input input, List<BuildFile> inCard) {
         EmbedSettings settings = input.settings().embed();
         TemplateVariables variables = input.variables();
         Run<?, ?> run = input.run();
@@ -179,9 +183,10 @@ public final class MessageComposer {
         if (settings.isShowChanges() && !input.changes().isEmpty()) {
             embed.field("Changes", input.changes(), false);
         }
-        if (settings.isShowArtifacts() && !input.listed().isEmpty()) {
+        List<BuildFile> listed = input.listed().stream().filter(file -> !inCard.contains(file)).toList();
+        if (settings.isShowArtifacts() && !listed.isEmpty()) {
             Set<BuildFile> linked = Set.copyOf(input.plan().linked());
-            embed.field("Artifacts", ArtifactListFormatter.fieldValue(input.listed(), linked, DiscordLimits.FIELD_VALUE), false);
+            embed.field("Artifacts", ArtifactListFormatter.fieldValue(listed, linked, DiscordLimits.FIELD_VALUE), false);
         }
         for (EmbedField field : settings.getFields()) {
             embed.field(variables.expand(field.getName()), variables.expand(field.getValue()), field.isInline());
