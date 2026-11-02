@@ -311,7 +311,7 @@ Whether a build is posted automatically is decided by the nearest property: the 
 | --- | --- | --- |
 | `content` | empty | Template. Text above the embed, up to 2000 characters. May contain mentions such as `<@&roleId>` or `<@userId>`. |
 | `username` | webhook name | Template. Display name for the post. Discord rejects names containing "discord". |
-| `avatarUrl` | webhook avatar | Template. Avatar image URL. |
+| `avatarUrl` | `https://cdn.moonrise.gg/api/cdn/download/images/jenkins-icon.png` (the Jenkins icon) | Template. Avatar image URL for the post; it does not change the embed thumbnail. Set it to an empty string to use the webhook's own avatar. Jobs without a message section get the Jenkins icon, and so does a saved message section that has no `avatarUrl` entry. A message section saved by an earlier version of the plugin stored an empty avatar, which still means the webhook's own avatar; enter a URL there to show the icon. |
 | `tts` | `false` | Send as text-to-speech. Not available with the default `placement` of `IN_EMBED`, because Discord does not allow text-to-speech for messages laid out with components; follow-up messages are never sent as text-to-speech. |
 | `suppressNotifications` | `false` | Post silently (no push or desktop notification). |
 | `mentionUsers` | `true` | User mentions in `content` ping the user. |
