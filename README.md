@@ -44,7 +44,7 @@ For Matrix and Maven module builds only the parent build is posted automatically
 
 ### A) Upload the plugin file
 
-1. Download `devbuild.hpi` from the [GitHub Releases](https://github.com/moonrise-studios/jenkins-devbuild-plugin/releases) page. The repository is private, so the download needs a GitHub account with access. Either sign in on github.com first, or use the GitHub CLI:
+1. Download `devbuild.hpi` from the [GitHub Releases](https://github.com/moonrise-studios/jenkins-devbuild-plugin/releases) page, or use the GitHub CLI:
 
    ```sh
    gh release download v1.0.0 -R moonrise-studios/jenkins-devbuild-plugin -p devbuild.hpi
