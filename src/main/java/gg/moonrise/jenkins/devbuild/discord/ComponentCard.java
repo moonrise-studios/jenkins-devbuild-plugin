@@ -18,7 +18,9 @@ import java.util.Set;
  * <p>The optional message text (e.g. role mentions) becomes a Text Display above a Container. The Container has the
  * embed colour as its accent bar and holds, in order: the author, title and description (in a Section with the
  * thumbnail when there is one), the fields (consecutive inline fields share one Text Display, one line each), the
- * image, a separator followed by one File component per attachment, and the footer with the timestamp.
+ * image, a separator and a {@value #DOWNLOAD_HEADER} heading followed by one File component per attachment, and the
+ * footer with the timestamp. When the Section has room and the fields start with inline ones, those inline lines move
+ * into the Section, so they sit beside the thumbnail instead of leaving empty space under a short title.
  *
  * <p>The card is cut down to {@link DiscordLimits#COMPONENT_TEXT_TOTAL} characters and
  * {@link DiscordLimits#COMPONENTS_TOTAL} components in the same order as {@link DiscordEmbed#applyLimits()}: the
@@ -38,6 +40,7 @@ public final class ComponentCard {
     private static final int SECTION_TEXTS = 3;
     private static final String ATTACHMENT_SCHEME = "attachment://";
     private static final String FALLBACK_FILENAME = "file";
+    private static final String DOWNLOAD_HEADER = "**Download here**";
 
     private final DiscordEmbed embed;
     private final List<DiscordAttachment> attachments;
@@ -149,8 +152,9 @@ public final class ComponentCard {
             components.add(textDisplay(messageText));
         }
         List<Map<String, Object>> children = new ArrayList<>();
-        addHeader(children);
-        addFields(children);
+        List<Map<String, Object>> fieldTexts = fieldTexts();
+        addHeader(children, fieldTexts);
+        children.addAll(fieldTexts);
         if (embed.getImageUrl() != null) {
             Map<String, Object> gallery = component(TYPE_MEDIA_GALLERY);
             gallery.put("items", List.of(Map.of("media", Map.of("url", embed.getImageUrl()))));
@@ -161,6 +165,7 @@ public final class ComponentCard {
             separator.put("divider", true);
             separator.put("spacing", SPACING_SMALL);
             children.add(separator);
+            children.add(textDisplay(DOWNLOAD_HEADER));
             for (DiscordAttachment attachment : attachments) {
                 Map<String, Object> file = component(TYPE_FILE);
                 file.put("file", Map.of("url", ATTACHMENT_SCHEME + attachment.filename()));
@@ -182,7 +187,11 @@ public final class ComponentCard {
         return components;
     }
 
-    private void addHeader(List<Map<String, Object>> children) {
+    /**
+     * Adds the author, title and description. With a thumbnail they go into a Section, which also takes the leading
+     * inline fields from {@code fieldTexts} while it has room, so the thumbnail does not tower over a short title.
+     */
+    private void addHeader(List<Map<String, Object>> children, List<Map<String, Object>> fieldTexts) {
         List<Map<String, Object>> texts = new ArrayList<>(SECTION_TEXTS);
         String authorName = singleLine(embed.getAuthorName());
         if (authorName != null) {
@@ -199,6 +208,9 @@ public final class ComponentCard {
             children.addAll(texts);
             return;
         }
+        if (texts.size() < SECTION_TEXTS && !fields.isEmpty() && fields.get(0).inline()) {
+            texts.add(fieldTexts.remove(0));
+        }
         Map<String, Object> thumbnail = component(TYPE_THUMBNAIL);
         thumbnail.put("media", Map.of("url", thumbnailUrl));
         Map<String, Object> section = component(TYPE_SECTION);
@@ -207,7 +219,11 @@ public final class ComponentCard {
         children.add(section);
     }
 
-    private void addFields(List<Map<String, Object>> children) {
+    /**
+     * One Text Display per non-inline field and per run of consecutive inline fields, in field order.
+     */
+    private List<Map<String, Object>> fieldTexts() {
+        List<Map<String, Object>> children = new ArrayList<>();
         List<String> inlineLines = new ArrayList<>();
         for (DiscordEmbed.Field field : fields) {
             boolean unnamed = DiscordEmbed.EMPTY_FIELD.equals(field.name());
@@ -219,6 +235,7 @@ public final class ComponentCard {
             children.add(textDisplay(unnamed ? field.value() : "**" + field.name() + "**\n" + field.value()));
         }
         flushInline(children, inlineLines);
+        return children;
     }
 
     private static void flushInline(List<Map<String, Object>> children, List<String> inlineLines) {
