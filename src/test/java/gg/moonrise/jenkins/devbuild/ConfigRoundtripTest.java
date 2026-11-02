@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.cloudbees.hudson.plugins.folder.Folder;
 import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
+import jenkins.model.Jenkins;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
@@ -70,6 +71,7 @@ class ConfigRoundtripTest {
         artifacts.setOnlyOnSuccess(false);
         artifacts.setAttachOnUnstable(true);
         artifacts.setOversizePolicy(OversizePolicy.SKIP);
+        artifacts.setPlacement(FilePlacement.WITH_EMBED);
         return artifacts;
     }
 
@@ -206,6 +208,59 @@ class ConfigRoundtripTest {
                 StandardCharsets.UTF_8);
         assertFalse(xml.contains("very-secret-token"));
         assertTrue(xml.contains("<webhookUrl>{"), "secret should be stored encrypted");
+    }
+
+    @Test
+    void defaultSectionsRoundtripWithTheNewDefaults(JenkinsRule r) throws Exception {
+        FreeStyleProject p = r.createFreeStyleProject();
+        DevBuildPublisher publisher = new DevBuildPublisher();
+        publisher.setEmbed(new EmbedSettings());
+        publisher.setArtifacts(new ArtifactSettings());
+        p.getPublishersList().add(publisher);
+
+        r.configRoundtrip(p);
+
+        DevBuildPublisher after = p.getPublishersList().get(DevBuildPublisher.class);
+        assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, after.getEmbed().getThumbnailUrl());
+        assertEquals(FilePlacement.AFTER_EMBED, after.getArtifacts().getPlacement());
+    }
+
+    @Test
+    void blankThumbnailRoundtripsAsNoThumbnail(JenkinsRule r) throws Exception {
+        FreeStyleProject p = r.createFreeStyleProject();
+        DevBuildPublisher publisher = new DevBuildPublisher();
+        EmbedSettings embed = new EmbedSettings();
+        embed.setThumbnailUrl("");
+        publisher.setEmbed(embed);
+        p.getPublishersList().add(publisher);
+
+        r.configRoundtrip(p);
+
+        assertEquals("", p.getPublishersList().get(DevBuildPublisher.class).getEmbed().getThumbnailUrl());
+        EmbedSettings reloaded = (EmbedSettings) Jenkins.XSTREAM2.fromXML(Jenkins.XSTREAM2.toXML(embed));
+        assertEquals("", reloaded.getThumbnailUrl());
+    }
+
+    @Test
+    void unconfiguredEmbedFormShowsTheDefaultThumbnail(JenkinsRule r) throws Exception {
+        FreeStyleProject p = r.createFreeStyleProject();
+        p.getPublishersList().add(new DevBuildPublisher());
+        try (JenkinsRule.WebClient wc = r.createWebClient()) {
+            String page = wc.getPage(p, "configure").getWebResponse().getContentAsString();
+            assertTrue(page.contains(EmbedSettings.DEFAULT_THUMBNAIL_URL), "thumbnail field is not pre-filled");
+        }
+    }
+
+    @Test
+    void olderXmlGetsTheNewDefaults(JenkinsRule r) {
+        EmbedSettings embed = (EmbedSettings) Jenkins.XSTREAM2.fromXML(
+                "<gg.moonrise.jenkins.devbuild.EmbedSettings><title>Old</title></gg.moonrise.jenkins.devbuild.EmbedSettings>");
+        assertEquals("Old", embed.getTitle());
+        assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, embed.getThumbnailUrl());
+        ArtifactSettings artifacts = (ArtifactSettings) Jenkins.XSTREAM2.fromXML(
+                "<gg.moonrise.jenkins.devbuild.ArtifactSettings><maxFiles>3</maxFiles></gg.moonrise.jenkins.devbuild.ArtifactSettings>");
+        assertEquals(3, artifacts.getMaxFiles());
+        assertEquals(FilePlacement.AFTER_EMBED, artifacts.getPlacement());
     }
 
     @Test

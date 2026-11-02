@@ -82,9 +82,15 @@ class FreestyleTest {
 
             FreeStyleBuild build = r.buildAndAssertSuccess(p);
 
-            FakeDiscord.Request request = discord.only();
-            assertTrue(request.isMultipart());
+            // Default placement AFTER_EMBED: the embed first, then the files in a second message.
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            FakeDiscord.Request request = requests.get(0);
+            assertFalse(request.isMultipart());
+            assertTrue(request.files().isEmpty());
+            assertFalse(request.payload().has("attachments"));
             JSONObject embed = request.embed();
+            assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, embed.getJSONObject("thumbnail").getString("url"));
             assertEquals("app #1", embed.getString("title"));
             assertEquals(0x2ECC71, embed.getInt("color"));
             assertEquals(r.getURL() + "job/app/1/", embed.getString("url"));
@@ -96,18 +102,24 @@ class FreestyleTest {
                     artifacts);
             assertFalse(artifacts.contains("sources"), artifacts);
 
-            List<FakeDiscord.Part> files = request.files();
+            FakeDiscord.Request filesMessage = requests.get(1);
+            assertTrue(filesMessage.isMultipart());
+            assertFalse(filesMessage.payload().has("embeds"));
+            assertFalse(filesMessage.payload().has("content"));
+            assertTrue(filesMessage.receivedAtMillis() >= request.receivedAtMillis());
+            List<FakeDiscord.Part> files = filesMessage.files();
             assertEquals(1, files.size());
+            assertEquals("files[0]", files.get(0).name());
             assertEquals("app-1.0.jar", files.get(0).filename());
             assertArrayEquals(jar, files.get(0).content());
-            JSONArray attachments = request.payload().getJSONArray("attachments");
+            JSONArray attachments = filesMessage.payload().getJSONArray("attachments");
             assertEquals(1, attachments.size());
             assertEquals(0, attachments.getJSONObject(0).getInt("id"));
             assertEquals("app-1.0.jar", attachments.getJSONObject(0).getString("filename"));
 
             DevBuildAction action = build.getAction(DevBuildAction.class);
             assertNotNull(action);
-            assertEquals(1, action.getMessageIds().size());
+            assertEquals(2, action.getMessageIds().size());
             String log = JenkinsRule.getLog(build);
             assertFalse(log.contains(FakeDiscord.TOKEN), "token leaked into the build log");
             assertTrue(log.contains("/api/webhooks/1234…/****"), log);
@@ -152,13 +164,16 @@ class FreestyleTest {
             r.buildAndAssertSuccess(p);
 
             List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(3, requests.size());
-            assertEquals(List.of("a.jar"), requests.get(0).files().stream().map(FakeDiscord.Part::filename).toList());
-            assertEquals(List.of("b.jar"), requests.get(1).files().stream().map(FakeDiscord.Part::filename).toList());
-            assertEquals(List.of("c.jar"), requests.get(2).files().stream().map(FakeDiscord.Part::filename).toList());
+            assertEquals(4, requests.size());
+            assertTrue(requests.get(0).files().isEmpty());
+            assertEquals(List.of("a.jar"), requests.get(1).files().stream().map(FakeDiscord.Part::filename).toList());
+            assertEquals(List.of("b.jar"), requests.get(2).files().stream().map(FakeDiscord.Part::filename).toList());
+            assertEquals(List.of("c.jar"), requests.get(3).files().stream().map(FakeDiscord.Part::filename).toList());
             assertTrue(requests.get(0).payload().has("embeds"));
-            assertFalse(requests.get(1).payload().has("embeds"));
-            assertEquals(1, requests.get(1).payload().getJSONArray("attachments").size());
+            for (int i = 1; i < requests.size(); i++) {
+                assertFalse(requests.get(i).payload().has("embeds"));
+                assertEquals(1, requests.get(i).payload().getJSONArray("attachments").size());
+            }
             String artifactsField = requests.get(0).field("Artifacts").getString("value");
             assertTrue(artifactsField.contains("[huge.jar](" + r.getURL() + "job/app/1/artifact/build/libs/huge.jar)"
                     + " · 1.5 MiB (not attached)"), artifactsField);
@@ -166,6 +181,47 @@ class FreestyleTest {
                 long total = request.files().stream().mapToLong(f -> f.content().length).sum();
                 assertTrue(total <= 1024 * 1024, "batch over budget: " + total);
             }
+        }
+    }
+
+    @Test
+    void withEmbedPlacementAttachesFilesToTheEmbedMessage(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            TestSupport.registerWebhook(discord);
+            ArtifactSettings artifacts = new ArtifactSettings();
+            artifacts.setPlacement(FilePlacement.WITH_EMBED);
+            DevBuildPublisher publisher = new DevBuildPublisher();
+            publisher.setWebhookName(TestSupport.WEBHOOK_NAME);
+            publisher.setArtifacts(artifacts);
+            FreeStyleProject p = project(r, Map.of("build/libs/app.jar", bytes(10)), publisher);
+
+            r.buildAndAssertSuccess(p);
+
+            FakeDiscord.Request request = discord.only();
+            assertTrue(request.isMultipart());
+            assertEquals("app #1", request.embed().getString("title"));
+            assertEquals(List.of("app.jar"), request.files().stream().map(FakeDiscord.Part::filename).toList());
+            assertEquals(1, request.payload().getJSONArray("attachments").size());
+        }
+    }
+
+    @Test
+    void withoutEmbedFilesGoInASingleMessage(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            TestSupport.registerWebhook(discord);
+            EmbedSettings embed = new EmbedSettings();
+            embed.setEnabled(false);
+            DevBuildPublisher publisher = new DevBuildPublisher();
+            publisher.setWebhookName(TestSupport.WEBHOOK_NAME);
+            publisher.setEmbed(embed);
+            FreeStyleProject p = project(r, Map.of("build/libs/app.jar", bytes(10)), publisher);
+
+            r.buildAndAssertSuccess(p);
+
+            FakeDiscord.Request request = discord.only();
+            assertTrue(request.isMultipart());
+            assertFalse(request.payload().has("embeds"));
+            assertEquals(List.of("app.jar"), request.files().stream().map(FakeDiscord.Part::filename).toList());
         }
     }
 

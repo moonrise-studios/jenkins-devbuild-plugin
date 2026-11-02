@@ -35,6 +35,7 @@ unclassified:
       includes: "build/libs/*.jar"
       oversizePolicy: SKIP
       maxUploadSizeMb: 8
+      placement: WITH_EMBED
     conditions:
       notifyOnAborted: true
       branchPattern: "main|release/.*"

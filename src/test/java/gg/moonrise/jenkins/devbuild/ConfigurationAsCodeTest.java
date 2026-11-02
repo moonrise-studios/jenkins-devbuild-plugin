@@ -35,11 +35,13 @@ class ConfigurationAsCodeTest {
         assertEquals("Built by Jenkins", global.getEmbed().getFooterText());
         assertEquals("#00FF00", global.getEmbed().getSuccessColor());
         assertEquals("${PROJECT_NAME} #${BUILD_NUMBER}", global.getEmbed().getTitle());
+        assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, global.getEmbed().getThumbnailUrl());
         assertEquals("${VERSION}", global.getEmbed().getFields().get(0).getValue());
         assertTrue(global.getEmbed().getFields().get(0).isInline());
         assertEquals("build/libs/*.jar", global.getArtifacts().getIncludes());
         assertEquals(OversizePolicy.SKIP, global.getArtifacts().getOversizePolicy());
         assertEquals(8, global.getArtifacts().getMaxUploadSizeMb());
+        assertEquals(FilePlacement.WITH_EMBED, global.getArtifacts().getPlacement());
         assertTrue(global.getConditions().isNotifyOnAborted());
         assertEquals("main|release/.*", global.getConditions().getBranchPattern());
     }
@@ -54,6 +56,7 @@ class ConfigurationAsCodeTest {
         assertTrue(exported.contains("defaultWebhookName: \"devbuilds\""), exported);
         assertTrue(exported.contains("name: \"releases\""), exported);
         assertTrue(exported.contains("oversizePolicy: SKIP"), exported);
+        assertTrue(exported.contains("placement: WITH_EMBED"), exported);
         assertNull(DevBuildGlobalConfiguration.get().getWebhooks().get(0).getWebhook().getWebhookUrl());
     }
 }

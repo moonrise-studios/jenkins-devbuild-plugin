@@ -59,10 +59,12 @@ class MultibranchTest {
             r.assertBuildStatusSuccess(feature.getBuildByNumber(1));
             r.assertLogContains("branch 'feature' does not match branchPattern 'master'", feature.getBuildByNumber(1));
 
-            FakeDiscord.Request request = discord.only();
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            FakeDiscord.Request request = requests.get(0);
             assertEquals("Game Server #1", request.embed().getString("title"));
             assertEquals("`master`", request.field("Branch").getString("value"));
-            List<FakeDiscord.Part> files = request.files();
+            List<FakeDiscord.Part> files = requests.get(1).files();
             assertEquals("mod.jar", files.get(0).filename());
             assertEquals("jar for master", files.get(0).text());
         }

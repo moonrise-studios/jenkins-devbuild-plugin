@@ -12,6 +12,7 @@ import com.cloudbees.plugins.credentials.CredentialsStore;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
+import java.util.List;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -56,10 +57,11 @@ class FolderTest {
 
             WorkflowRun run = r.buildAndAssertSuccess(job);
 
-            FakeDiscord.Request request = discord.only();
-            assertEquals("app #1", request.embed().getString("title"));
-            assertEquals("team.jar", request.files().get(0).filename());
-            assertEquals("team jar", request.files().get(0).text());
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            assertEquals("app #1", requests.get(0).embed().getString("title"));
+            assertEquals("team.jar", requests.get(1).files().get(0).filename());
+            assertEquals("team jar", requests.get(1).files().get(0).text());
             assertNull(run.getAction(DevBuildAction.class));
             r.assertLogContains("[DevBuild] Posting SUCCESS", run);
         }
@@ -75,13 +77,14 @@ class FolderTest {
 
             WorkflowRun run = r.buildAndAssertSuccess(job);
 
-            assertEquals("from step", discord.only().payload().getString("content"));
+            assertEquals(2, discord.requests().size(), "embed message and files message from the step only");
+            assertEquals("from step", discord.requests().get(0).payload().getString("content"));
             r.assertLogContains("Discord step already ran for this build; not posting again", run);
 
             DevBuildFolderProperty property = folder.getProperties().get(DevBuildFolderProperty.class);
             property.setSkipIfStepUsed(false);
             r.buildAndAssertSuccess(job);
-            assertEquals(3, discord.requests().size(), "skipIfStepUsed=false posts from both the step and the listener");
+            assertEquals(6, discord.requests().size(), "skipIfStepUsed=false posts from both the step and the listener");
         }
     }
 

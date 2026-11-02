@@ -28,7 +28,8 @@ class PipelineTest {
                       writeFile file: 'build/libs/app.jar', text: 'inside'
                       writeFile file: 'build/libs/app-javadoc.jar', text: 'docs'
                       archiveArtifacts 'build/libs/*.jar'
-                      discordDevBuild webhookName: 'devbuilds', artifacts: [includes: 'build/libs/*.jar'],
+                      discordDevBuild webhookName: 'devbuilds',
+                          artifacts: [includes: 'build/libs/*.jar', placement: 'WITH_EMBED'],
                           embed: [title: 'Dev build ${BUILD_NUMBER}']
                     }
                     discordDevBuild webhookName: 'devbuilds', message: [content: 'outside ${JOB_DISPLAY_NAME}']
@@ -37,7 +38,7 @@ class PipelineTest {
             WorkflowRun run = r.buildAndAssertSuccess(job);
 
             List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(2, requests.size());
+            assertEquals(3, requests.size());
             FakeDiscord.Request inside = requests.get(0);
             assertEquals("Dev build 1", inside.embed().getString("title"));
             assertEquals(1, inside.files().size());
@@ -47,7 +48,10 @@ class PipelineTest {
             FakeDiscord.Request outside = requests.get(1);
             assertEquals("outside app", outside.payload().getString("content"));
             assertEquals("app #1", outside.embed().getString("title"));
-            assertEquals("app.jar", outside.files().get(0).filename());
+            assertTrue(outside.files().isEmpty());
+            FakeDiscord.Request outsideFiles = requests.get(2);
+            assertFalse(outsideFiles.payload().has("content"), "the content is not repeated in the files message");
+            assertEquals("app.jar", outsideFiles.files().get(0).filename());
             assertEquals(2, run.getAction(DevBuildAction.class).getInvocations());
         }
     }
@@ -65,10 +69,11 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            FakeDiscord.Request request = discord.only();
-            assertEquals("plugin.jar", request.files().get(0).filename());
-            assertEquals("from workspace", request.files().get(0).text());
-            String artifacts = request.field("Artifacts").getString("value");
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            assertEquals("plugin.jar", requests.get(1).files().get(0).filename());
+            assertEquals("from workspace", requests.get(1).files().get(0).text());
+            String artifacts = requests.get(0).field("Artifacts").getString("value");
             assertTrue(artifacts.startsWith("plugin.jar · 14 B"), artifacts);
         }
     }
@@ -99,10 +104,11 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            FakeDiscord.Request request = discord.only();
-            assertEquals("SUCCESS", request.payload().getString("content"));
-            assertEquals("decl.jar", request.files().get(0).filename());
-            assertEquals("declarative", request.files().get(0).text());
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            assertEquals("SUCCESS", requests.get(0).payload().getString("content"));
+            assertEquals("decl.jar", requests.get(1).files().get(0).filename());
+            assertEquals("declarative", requests.get(1).files().get(0).text());
         }
     }
 
@@ -130,7 +136,8 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            assertEquals("a.jar", discord.only().files().get(0).filename());
+            assertEquals(2, discord.requests().size());
+            assertEquals("a.jar", discord.requests().get(1).files().get(0).filename());
         }
     }
 
@@ -148,27 +155,131 @@ class PipelineTest {
                       }
                       archiveArtifacts 'libs/*.jar'
                     }
-                    discordDevBuild webhookName: 'devbuilds', artifacts: [maxFiles: 15]
+                    discordDevBuild webhookName: 'devbuilds', artifacts: [maxFiles: 15],
+                        message: [content: '<@&123456789012345678> new build', username: 'Builds',
+                                  avatarUrl: 'https://example.com/avatar.png']
+                    """);
+
+            r.buildAndAssertSuccess(job);
+
+            // AFTER_EMBED: the embed creates the forum post, then 10 + 2 files follow in that post.
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(3, requests.size());
+            FakeDiscord.Request first = requests.get(0);
+            JSONObject payload = first.payload();
+            assertEquals("Build 1 of many", payload.getString("thread_name"));
+            assertEquals(List.of("111111111111111111", "222222222222222222"), payload.getJSONArray("applied_tags"));
+            assertEquals("<@&123456789012345678> new build", payload.getString("content"));
+            assertEquals("many #1", first.embed().getString("title"));
+            assertFalse(first.query().containsKey("thread_id"));
+            assertEquals("true", first.query().get("wait"));
+            assertTrue(first.files().isEmpty());
+            assertFalse(payload.has("attachments"));
+
+            List<List<String>> batches = List.of(
+                    List.of("mod-10.jar", "mod-11.jar", "mod-12.jar", "mod-13.jar", "mod-14.jar",
+                            "mod-15.jar", "mod-16.jar", "mod-17.jar", "mod-18.jar", "mod-19.jar"),
+                    List.of("mod-20.jar", "mod-21.jar"));
+            for (int i = 0; i < batches.size(); i++) {
+                FakeDiscord.Request followUp = requests.get(i + 1);
+                JSONObject followUpPayload = followUp.payload();
+                assertEquals(FakeDiscord.NEW_THREAD_ID, followUp.query().get("thread_id"));
+                assertFalse(followUpPayload.has("thread_name"));
+                assertFalse(followUpPayload.has("applied_tags"));
+                assertFalse(followUpPayload.has("embeds"));
+                assertFalse(followUpPayload.has("content"));
+                assertEquals("Builds", followUpPayload.getString("username"));
+                assertEquals("https://example.com/avatar.png", followUpPayload.getString("avatar_url"));
+                assertEquals(batches.get(i), followUp.files().stream().map(FakeDiscord.Part::filename).toList());
+            }
+        }
+    }
+
+    @Test
+    void filesFollowTheEmbedIntoTheConfiguredThread(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            TestSupport.registerWebhook(discord);
+            WorkflowJob job = TestSupport.pipeline(r, "thread-files", """
+                    node {
+                      writeFile file: 'build/libs/app.jar', text: 'app'
+                      archiveArtifacts 'build/libs/*.jar'
+                    }
+                    discordDevBuild webhookName: 'devbuilds', webhook: [threadId: '1234567890123456789']
                     """);
 
             r.buildAndAssertSuccess(job);
 
             List<FakeDiscord.Request> requests = discord.requests();
             assertEquals(2, requests.size());
-            FakeDiscord.Request first = requests.get(0);
-            JSONObject payload = first.payload();
-            assertEquals("Build 1 of many", payload.getString("thread_name"));
-            assertEquals(List.of("111111111111111111", "222222222222222222"), payload.getJSONArray("applied_tags"));
-            assertFalse(first.query().containsKey("thread_id"));
-            assertEquals(10, first.files().size());
-            assertEquals("mod-10.jar", first.files().get(0).filename());
+            assertTrue(requests.get(0).payload().has("embeds"));
+            assertTrue(requests.get(0).files().isEmpty());
+            assertEquals("app.jar", requests.get(1).files().get(0).filename());
+            for (FakeDiscord.Request request : requests) {
+                assertEquals("1234567890123456789", request.query().get("thread_id"));
+                assertFalse(request.payload().has("thread_name"));
+            }
+        }
+    }
 
-            FakeDiscord.Request followUp = requests.get(1);
-            assertEquals(FakeDiscord.NEW_THREAD_ID, followUp.query().get("thread_id"));
-            assertFalse(followUp.payload().has("thread_name"));
-            assertFalse(followUp.payload().has("embeds"));
-            assertEquals(List.of("mod-20.jar", "mod-21.jar"),
-                    followUp.files().stream().map(FakeDiscord.Part::filename).toList());
+    @Test
+    void filesAreNotSentWhenTheEmbedMessageFails(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            TestSupport.registerWebhook(discord);
+            discord.enqueue(400, "{\"message\":\"Invalid Form Body\",\"code\":50035}");
+            WorkflowJob job = TestSupport.pipeline(r, "first-fails", """
+                    node {
+                      writeFile file: 'build/libs/app.jar', text: 'app'
+                      archiveArtifacts 'build/libs/*.jar'
+                    }
+                    discordDevBuild webhookName: 'devbuilds'
+                    """);
+
+            WorkflowRun run = r.buildAndAssertSuccess(job);
+
+            assertEquals(1, discord.requests().size(), "no follow-up after the embed message failed");
+            assertTrue(discord.only().files().isEmpty());
+            r.assertLogContains("Discord notification failed", run);
+        }
+    }
+
+    @Test
+    void failedFilesMessageIsLogged(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            TestSupport.registerWebhook(discord);
+            discord.enqueue(200, "{\"id\":\"900000000000000001\",\"channel_id\":\"" + FakeDiscord.CHANNEL_ID + "\"}");
+            discord.enqueue(413, "{\"message\":\"Request entity too large\",\"code\":40005}");
+            WorkflowJob job = TestSupport.pipeline(r, "follow-up-fails", """
+                    node {
+                      writeFile file: 'build/libs/app.jar', text: 'app'
+                      archiveArtifacts 'build/libs/*.jar'
+                    }
+                    discordDevBuild webhookName: 'devbuilds'
+                    """);
+
+            WorkflowRun run = r.buildAndAssertSuccess(job);
+
+            assertEquals(2, discord.requests().size());
+            assertEquals("app.jar", discord.requests().get(1).files().get(0).filename());
+            r.assertLogContains("Discord notification failed", run);
+        }
+    }
+
+    @Test
+    void blankThumbnailIsOmitted(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            TestSupport.registerWebhook(discord);
+            WorkflowJob job = TestSupport.pipeline(r, "no-thumb", """
+                    discordDevBuild webhookName: 'devbuilds'
+                    discordDevBuild webhookName: 'devbuilds', embed: [thumbnailUrl: '']
+                    """);
+
+            r.buildAndAssertSuccess(job);
+
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL,
+                    requests.get(0).embed().getJSONObject("thumbnail").getString("url"));
+            assertFalse(requests.get(1).embed().has("thumbnail"));
         }
     }
 
@@ -208,9 +319,16 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            FakeDiscord.Request request = discord.only();
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            FakeDiscord.Request request = requests.get(0);
             JSONObject payload = request.payload();
             assertEquals("<@&42> tpl|#1|a.jar|0123456|[]|${UNKNOWN}", payload.getString("content"));
+            JSONObject filesPayload = requests.get(1).payload();
+            assertFalse(filesPayload.has("content"));
+            assertEquals("Builds for tpl", filesPayload.getString("username"));
+            assertEquals(4096, filesPayload.getInt("flags"));
+            assertEquals(List.of(), filesPayload.getJSONObject("allowed_mentions").getJSONArray("parse"));
             assertEquals("Builds for tpl", payload.getString("username"));
             assertEquals(List.of("users"), payload.getJSONObject("allowed_mentions").getJSONArray("parse"));
             assertEquals(4096, payload.getInt("flags"));
