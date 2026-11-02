@@ -10,6 +10,10 @@ import java.util.Map;
 
 /**
  * One webhook execution: the JSON payload plus the files uploaded with it.
+ *
+ * <p>A message with {@linkplain #components(List) components} is sent as a Components V2 message: Discord then
+ * rejects {@code content}, {@code embeds} and {@code tts}, so those are left out of the payload and the
+ * {@link DiscordLimits#FLAG_IS_COMPONENTS_V2} flag is set.
  */
 public final class WebhookMessage {
 
@@ -23,6 +27,7 @@ public final class WebhookMessage {
     private final List<String> allowedMentions = new ArrayList<>();
     private final List<DiscordEmbed> embeds = new ArrayList<>();
     private final List<DiscordAttachment> attachments = new ArrayList<>();
+    private final List<Map<String, Object>> components = new ArrayList<>();
 
     public WebhookMessage content(@CheckForNull String value) {
         this.content = TextUtils.isBlank(value) ? null : TextUtils.truncate(value, DiscordLimits.CONTENT);
@@ -79,6 +84,23 @@ public final class WebhookMessage {
         return this;
     }
 
+    /**
+     * Sets the top-level components, e.g. from {@link ComponentCard#render}. Files referenced with
+     * {@code attachment://} must be added as attachments with exactly that filename.
+     */
+    public WebhookMessage components(@NonNull List<Map<String, Object>> value) {
+        components.clear();
+        components.addAll(value);
+        return this;
+    }
+
+    /**
+     * Whether the message is sent as a Components V2 message.
+     */
+    public boolean hasComponents() {
+        return !components.isEmpty();
+    }
+
     @CheckForNull
     public String getContent() {
         return content;
@@ -103,7 +125,7 @@ public final class WebhookMessage {
      * Returns {@code true} when Discord would reject the message for having nothing to show.
      */
     public boolean isEmpty() {
-        return content == null && embeds.isEmpty() && attachments.isEmpty();
+        return content == null && embeds.isEmpty() && attachments.isEmpty() && components.isEmpty();
     }
 
     /**
@@ -113,7 +135,8 @@ public final class WebhookMessage {
     @NonNull
     public Map<String, Object> toPayload() {
         Map<String, Object> json = new LinkedHashMap<>();
-        if (content != null) {
+        boolean componentsV2 = hasComponents();
+        if (content != null && !componentsV2) {
             json.put("content", content);
         }
         if (username != null) {
@@ -122,10 +145,12 @@ public final class WebhookMessage {
         if (avatarUrl != null) {
             json.put("avatar_url", avatarUrl);
         }
-        if (tts) {
+        if (tts && !componentsV2) {
             json.put("tts", true);
         }
-        if (!embeds.isEmpty()) {
+        if (componentsV2) {
+            json.put("components", List.copyOf(components));
+        } else if (!embeds.isEmpty()) {
             List<Map<String, Object>> list = new ArrayList<>();
             for (DiscordEmbed embed : embeds) {
                 list.add(embed.toJson());
@@ -133,8 +158,9 @@ public final class WebhookMessage {
             json.put("embeds", list);
         }
         json.put("allowed_mentions", Map.of("parse", List.copyOf(allowedMentions)));
-        if (flags != 0) {
-            json.put("flags", flags);
+        int allFlags = componentsV2 ? flags | DiscordLimits.FLAG_IS_COMPONENTS_V2 : flags;
+        if (allFlags != 0) {
+            json.put("flags", allFlags);
         }
         if (threadName != null) {
             json.put("thread_name", threadName);

@@ -77,7 +77,7 @@ public final class DiscordClient implements AutoCloseable {
         String masked = WebhookUrls.mask(webhookUrl);
         URI uri;
         try {
-            uri = buildUri(webhookUrl, threadId);
+            uri = buildUri(webhookUrl, threadId, message.hasComponents());
         } catch (IllegalArgumentException e) {
             throw new IOException("Invalid Discord webhook URL " + masked);
         }
@@ -135,11 +135,23 @@ public final class DiscordClient implements AutoCloseable {
      */
     @NonNull
     public static URI buildUri(@NonNull String webhookUrl, @CheckForNull String threadId) {
+        return buildUri(webhookUrl, threadId, false);
+    }
+
+    /**
+     * Appends {@code wait=true}, the optional {@code thread_id} and, for a message with components,
+     * {@code with_components=true}; without it Discord ignores the components of a webhook message.
+     */
+    @NonNull
+    public static URI buildUri(@NonNull String webhookUrl, @CheckForNull String threadId, boolean withComponents) {
         String base = webhookUrl.trim();
         StringBuilder url = new StringBuilder(base);
         url.append(base.contains("?") ? '&' : '?').append("wait=true");
         if (threadId != null && !threadId.isBlank()) {
             url.append("&thread_id=").append(URLEncoder.encode(threadId.trim(), StandardCharsets.UTF_8));
+        }
+        if (withComponents) {
+            url.append("&with_components=true");
         }
         return URI.create(url.toString());
     }
