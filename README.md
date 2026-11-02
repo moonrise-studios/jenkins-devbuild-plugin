@@ -1,6 +1,6 @@
 # DevBuild Discord Publisher
 
-DevBuild Discord Publisher is a Jenkins plugin that posts finished builds to a Discord channel through a webhook. Each post contains an embed that describes the build, and the built jar files are uploaded as real Discord attachments right below it, so people can download a dev build straight from Discord.
+DevBuild Discord Publisher is a Jenkins plugin that posts finished builds to a Discord channel through a webhook. Each post contains an embed that describes the build, and the built jar files are uploaded as real Discord attachments inside it, so people can download a dev build straight from Discord.
 
 It works with every job type: Freestyle (and other classic project types such as Maven and Matrix), Pipeline, and Multibranch Pipeline and Organization Folders. Every setting can be configured per job or per folder, with global defaults.
 
@@ -8,7 +8,7 @@ It works with every job type: Freestyle (and other classic project types such as
 
 - An embed per build with a title, link, colour by result, the Moonrise Studios logo as thumbnail, and optional fields for the result, duration, branch, commit, change log and file list. Author, thumbnail, image, footer, timestamp and custom fields are configurable, and all text is templated with build variables.
 - Jar files (or any Ant pattern) uploaded as Discord attachments. Archived artifacts are used by default, with a fallback to the workspace.
-- Files appear below the embed: the embed is posted first and the files follow in a separate message, because Discord shows a message's attachments above its embeds. Set `placement` to `WITH_EMBED` to attach them to the embed message instead.
+- One message per build with the files inside the embed: the build card is laid out with Discord components, so the files show as download cards within it. Set `placement` to `AFTER_EMBED` to post a classic embed with the files in a separate message right below it, or to `WITH_EMBED` to attach them to the classic embed message, where Discord shows them above the embed.
 - Large uploads are split automatically: at most 10 files per message and a configurable upload budget per message. Remaining files are sent in further follow-up messages to the same channel, thread or forum post. Files that can never fit can be linked to Jenkins, skipped, or fail the step.
 - Posts into a channel, an existing thread or forum post (`threadId`), or a new forum post per build (`threadName`, with forum tags).
 - Plain message text above the embed with role or user mentions, a custom username and avatar, silent messages, and control over which mentions may ping.
@@ -312,7 +312,7 @@ Whether a build is posted automatically is decided by the nearest property: the 
 | `content` | empty | Template. Text above the embed, up to 2000 characters. May contain mentions such as `<@&roleId>` or `<@userId>`. |
 | `username` | webhook name | Template. Display name for the post. Discord rejects names containing "discord". |
 | `avatarUrl` | webhook avatar | Template. Avatar image URL. |
-| `tts` | `false` | Send as text-to-speech. |
+| `tts` | `false` | Send as text-to-speech. Not available with the default `placement` of `IN_EMBED`, because Discord does not allow text-to-speech for messages laid out with components; follow-up messages are never sent as text-to-speech. |
 | `suppressNotifications` | `false` | Post silently (no push or desktop notification). |
 | `mentionUsers` | `true` | User mentions in `content` ping the user. |
 | `mentionRoles` | `true` | Role mentions in `content` ping the role. |
@@ -360,9 +360,9 @@ Text that exceeds a Discord limit is cut and ends with "…". When the whole emb
 | `onlyOnSuccess` | `true` | Upload files only for successful builds. Other builds still list the files. |
 | `attachOnUnstable` | `false` | With `onlyOnSuccess`, also upload for unstable builds. |
 | `oversizePolicy` | `LINK` | For a file larger than the budget: `LINK` lists it with a link to the Jenkins artifact, `SKIP` leaves it out, `FAIL` fails the step (automatic posts log the error instead). |
-| `placement` | `AFTER_EMBED` | Where the files go relative to the embed. `AFTER_EMBED` posts the embed first and the files in follow-up messages right after it, so they appear below the embed. `WITH_EMBED` attaches the first files to the embed message itself. Discord always renders a message's attachments above its embeds, so with `WITH_EMBED` the files appear above the embed. |
+| `placement` | `IN_EMBED` | Where the files go relative to the embed. `IN_EMBED` posts one message that lays the embed out with Discord components: a card with a coloured accent bar, the fields as lines of text, and the files as download cards inside it. `AFTER_EMBED` posts a classic embed first and the files in follow-up messages right after it, so they appear below the embed. `WITH_EMBED` attaches the first files to the classic embed message itself. Discord always renders a classic message's attachments above its embeds, so with `WITH_EMBED` the files appear above the embed. |
 
-Files are sorted by path and uploaded in batches of up to 10 files within the budget. With `placement: 'AFTER_EMBED'` the first message carries the message text and the embed, and every batch follows in its own message. With `placement: 'WITH_EMBED'` the first batch is attached to the embed message and further batches follow. The follow-up messages have no embed and no message text (so mentions do not ping twice), use the same username and avatar so Discord groups them under the post, and go to the same channel, thread or forum post. When the embed is turned off or there are no files to upload, a single message is posted. If the first message fails, no files are sent; a failed follow-up is logged like any other Discord error. Files are streamed from the controller or the agent and are not loaded into memory.
+Files are sorted by path and uploaded in batches of up to 10 files within the budget. With the default `placement: 'IN_EMBED'` the first batch is shown inside the card, and further batches follow in their own messages. Uploaded file names are reduced to letters, digits, `.`, `_` and `-` (other characters become `_`) so the card can refer to them. With `placement: 'AFTER_EMBED'` the first message carries the message text and the embed, and every batch follows in its own message. With `placement: 'WITH_EMBED'` the first batch is attached to the embed message and further batches follow. The follow-up messages have no embed and no message text (so mentions do not ping twice), use the same username and avatar so Discord groups them under the post, and go to the same channel, thread or forum post. When the embed is turned off or there are no files to upload, a single message is posted. If the first message fails, no files are sent; a failed follow-up is logged like any other Discord error. Files are streamed from the controller or the agent and are not loaded into memory.
 
 ### Notify conditions (`conditions`)
 

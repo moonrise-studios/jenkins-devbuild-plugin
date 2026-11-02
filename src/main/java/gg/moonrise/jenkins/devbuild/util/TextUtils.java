@@ -116,6 +116,27 @@ public final class TextUtils {
     }
 
     /**
+     * Replaces every character other than {@code A-Z a-z 0-9 . _ -} with {@code _}, so the name can be referenced as
+     * {@code attachment://<name>} in Discord components.
+     *
+     * @param fallback returned when the name is blank
+     */
+    @NonNull
+    public static String safeFilename(@CheckForNull String name, @NonNull String fallback) {
+        if (isBlank(name)) {
+            return fallback;
+        }
+        StringBuilder out = new StringBuilder(name.length());
+        name.trim().codePoints().forEach(c -> out.append(isSafeFilenameChar(c) ? (char) c : '_'));
+        return out.toString();
+    }
+
+    private static boolean isSafeFilenameChar(int c) {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+                || c == '.' || c == '_' || c == '-';
+    }
+
+    /**
      * Escapes characters that would break a Markdown link label.
      */
     @NonNull

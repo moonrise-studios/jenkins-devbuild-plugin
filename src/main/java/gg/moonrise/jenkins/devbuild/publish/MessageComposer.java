@@ -6,6 +6,8 @@ import gg.moonrise.jenkins.devbuild.EmbedField;
 import gg.moonrise.jenkins.devbuild.EmbedSettings;
 import gg.moonrise.jenkins.devbuild.FilePlacement;
 import gg.moonrise.jenkins.devbuild.MessageSettings;
+import gg.moonrise.jenkins.devbuild.discord.ComponentCard;
+import gg.moonrise.jenkins.devbuild.discord.DiscordAttachment;
 import gg.moonrise.jenkins.devbuild.discord.DiscordEmbed;
 import gg.moonrise.jenkins.devbuild.discord.DiscordLimits;
 import gg.moonrise.jenkins.devbuild.discord.WebhookMessage;
@@ -16,12 +18,22 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * Builds the webhook messages for a build: the main message with the embed, then one follow-up message per batch of
- * files. With {@link FilePlacement#WITH_EMBED}, or without an embed, the first batch goes with the main message
- * instead.
+ * Builds the webhook messages for a build: the main message with the embed, then follow-up messages with the files,
+ * one per batch.
+ *
+ * <ul>
+ *   <li>{@link FilePlacement#IN_EMBED} (default): the main message is a Components V2 card that shows the message
+ *   text, the embed and the first batch of files in one message. TTS is not available for such a message.</li>
+ *   <li>{@link FilePlacement#AFTER_EMBED}: the main message has the classic embed and every batch follows.</li>
+ *   <li>{@link FilePlacement#WITH_EMBED}: the first batch is attached to the classic embed message.</li>
+ * </ul>
+ *
+ * <p>Without an embed the first batch goes with the main message for every placement. Any further batches are sent as
+ * classic follow-up messages with attachments only.
  */
 public final class MessageComposer {
 
@@ -75,7 +87,6 @@ public final class MessageComposer {
         MessageSettings messageSettings = settings.message();
         TemplateVariables variables = input.variables();
         WebhookMessage message = baseMessage(messageSettings, variables)
-                .tts(messageSettings.isTts())
                 .allowedMentions(messageSettings.allowedMentionTypes());
         String content = variables.expand(messageSettings.getContent());
 
@@ -86,6 +97,11 @@ public final class MessageComposer {
         }
 
         EmbedSettings embedSettings = settings.embed();
+        if (embedSettings.isEnabled() && settings.artifacts().getPlacement() == FilePlacement.IN_EMBED
+                && addCard(message, input, content, files)) {
+            return message;
+        }
+        message.tts(messageSettings.isTts());
         if (embedSettings.isEnabled()) {
             message.embed(buildEmbed(input).applyLimits());
         } else if (!input.plan().linked().isEmpty()) {
@@ -98,6 +114,24 @@ public final class MessageComposer {
 
         files.forEach(file -> message.attachment(file.toAttachment()));
         return message;
+    }
+
+    /**
+     * Lays the message text, the embed and the files out as a Components V2 card. Returns {@code false}, leaving the
+     * message untouched, when the card would be empty.
+     */
+    private static boolean addCard(WebhookMessage message, Input input, String content, List<BuildFile> files) {
+        DiscordEmbed embed = buildEmbed(input).applyLimits();
+        // The card references each file by name, so both use the same safe, unique names.
+        List<DiscordAttachment> attachments = ComponentCard.withUniqueSafeNames(
+                files.stream().map(BuildFile::toAttachment).toList());
+        List<Map<String, Object>> card = ComponentCard.render(content, embed, attachments);
+        if (card.isEmpty()) {
+            return false;
+        }
+        message.components(card);
+        attachments.forEach(message::attachment);
+        return true;
     }
 
     private static WebhookMessage baseMessage(MessageSettings settings, TemplateVariables variables) {

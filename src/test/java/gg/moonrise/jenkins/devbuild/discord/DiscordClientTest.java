@@ -171,4 +171,43 @@ class DiscordClientTest {
         assertEquals("https://discord.com/api/webhooks/1/t?x=1&wait=true",
                 DiscordClient.buildUri("https://discord.com/api/webhooks/1/t?x=1", " ").toString());
     }
+
+    @Test
+    void buildsUriWithComponents() {
+        assertEquals("https://discord.com/api/webhooks/1/t?wait=true&with_components=true",
+                DiscordClient.buildUri("https://discord.com/api/webhooks/1/t", null, true).toString());
+        assertEquals("https://discord.com/api/webhooks/1/t?wait=true&thread_id=42&with_components=true",
+                DiscordClient.buildUri("https://discord.com/api/webhooks/1/t", "42", true).toString());
+        assertEquals("https://discord.com/api/webhooks/1/t?wait=true&thread_id=42",
+                DiscordClient.buildUri("https://discord.com/api/webhooks/1/t", "42", false).toString());
+    }
+
+    @Test
+    void sendsComponentsMessageWithComponentsQuery() throws Exception {
+        byte[] content = "jar".getBytes(StandardCharsets.UTF_8);
+        List<DiscordAttachment> files = ComponentCard.withUniqueSafeNames(
+                List.of(new DiscordAttachment("my app.jar", content.length, () -> new ByteArrayInputStream(content))));
+        WebhookMessage message = new WebhookMessage()
+                .components(ComponentCard.render(null, new DiscordEmbed().title("app #1").applyLimits(), files));
+        files.forEach(message::attachment);
+        try (DiscordClient client = client(0)) {
+            client.execute(discord.url(), "42", message);
+        }
+        FakeDiscord.Request request = discord.only();
+        assertEquals("true", request.query().get("with_components"));
+        assertEquals("42", request.query().get("thread_id"));
+        assertEquals("my_app.jar", request.files().get(0).filename());
+        JSONObject payload = request.payload();
+        assertEquals(DiscordLimits.FLAG_IS_COMPONENTS_V2, payload.getInt("flags"));
+        assertEquals("attachment://my_app.jar", payload.getJSONArray("components").getJSONObject(0)
+                .getJSONArray("components").getJSONObject(2).getJSONObject("file").getString("url"));
+    }
+
+    @Test
+    void classicMessageHasNoComponentsQuery() throws Exception {
+        try (DiscordClient client = client(0)) {
+            client.execute(discord.url(), null, new WebhookMessage().content("x"));
+        }
+        assertFalse(discord.only().query().containsKey("with_components"));
+    }
 }

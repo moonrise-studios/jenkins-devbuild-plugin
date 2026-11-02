@@ -2,6 +2,7 @@ package gg.moonrise.jenkins.devbuild;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -59,12 +60,11 @@ class MultibranchTest {
             r.assertBuildStatusSuccess(feature.getBuildByNumber(1));
             r.assertLogContains("branch 'feature' does not match branchPattern 'master'", feature.getBuildByNumber(1));
 
-            List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(2, requests.size());
-            FakeDiscord.Request request = requests.get(0);
-            assertEquals("Game Server #1", request.embed().getString("title"));
-            assertEquals("`master`", request.field("Branch").getString("value"));
-            List<FakeDiscord.Part> files = requests.get(1).files();
+            FakeDiscord.Request request = discord.only();
+            assertEquals("Game Server #1", request.cardTitle());
+            assertTrue(request.cardText().contains("**Branch:** `master`"), request.cardText());
+            assertEquals(List.of("mod.jar"), request.cardFiles());
+            List<FakeDiscord.Part> files = request.files();
             assertEquals("mod.jar", files.get(0).filename());
             assertEquals("jar for master", files.get(0).text());
         }

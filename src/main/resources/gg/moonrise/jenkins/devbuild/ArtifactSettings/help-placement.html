@@ -1,6 +1,7 @@
 <div>
-  Where the uploaded files appear relative to the embed. Discord always shows the attachments of a message above its embeds, so files attached to the embed message appear above the embed.
-  <code>AFTER_EMBED</code>: post the embed first and the files in a follow-up message right after it (more follow-ups when there are more than 10 files or they exceed the budget), so the files appear below the embed. Follow-ups go to the same channel, thread or forum post and use the same username and avatar.
-  <code>WITH_EMBED</code>: attach the first files to the embed message itself; Discord shows them above the embed.
-  Without an embed, or when no files are uploaded, a single message is posted either way. Default: <code>AFTER_EMBED</code>.
+  Where the uploaded files appear relative to the embed.
+  <code>IN_EMBED</code>: post one message that lays the embed out with Discord components: a card with a coloured accent bar, the inline fields shown as lines of text, and the first files (up to 10, within the budget) shown as download cards inside the card. Further files follow in separate messages. Text-to-speech is not available in this mode. Uploaded file names are reduced to letters, digits, <code>.</code>, <code>_</code> and <code>-</code>.
+  <code>AFTER_EMBED</code>: post a classic embed first and the files in a follow-up message right after it (more follow-ups when there are more than 10 files or they exceed the budget), so the files appear below the embed. Follow-ups go to the same channel, thread or forum post and use the same username and avatar.
+  <code>WITH_EMBED</code>: attach the first files to the classic embed message itself. Discord always shows the attachments of a classic message above its embeds, so the files appear above the embed.
+  Without an embed a single message with the files is posted for every option. Default: <code>IN_EMBED</code>.
 </div>

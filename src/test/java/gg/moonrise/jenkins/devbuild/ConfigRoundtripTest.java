@@ -222,7 +222,7 @@ class ConfigRoundtripTest {
 
         DevBuildPublisher after = p.getPublishersList().get(DevBuildPublisher.class);
         assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, after.getEmbed().getThumbnailUrl());
-        assertEquals(FilePlacement.AFTER_EMBED, after.getArtifacts().getPlacement());
+        assertEquals(FilePlacement.IN_EMBED, after.getArtifacts().getPlacement());
     }
 
     @Test
@@ -260,7 +260,7 @@ class ConfigRoundtripTest {
         ArtifactSettings artifacts = (ArtifactSettings) Jenkins.XSTREAM2.fromXML(
                 "<gg.moonrise.jenkins.devbuild.ArtifactSettings><maxFiles>3</maxFiles></gg.moonrise.jenkins.devbuild.ArtifactSettings>");
         assertEquals(3, artifacts.getMaxFiles());
-        assertEquals(FilePlacement.AFTER_EMBED, artifacts.getPlacement());
+        assertEquals(FilePlacement.IN_EMBED, artifacts.getPlacement());
     }
 
     @Test

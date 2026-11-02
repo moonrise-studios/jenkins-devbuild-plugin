@@ -38,7 +38,7 @@ class PipelineTest {
             WorkflowRun run = r.buildAndAssertSuccess(job);
 
             List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(3, requests.size());
+            assertEquals(2, requests.size());
             FakeDiscord.Request inside = requests.get(0);
             assertEquals("Dev build 1", inside.embed().getString("title"));
             assertEquals(1, inside.files().size());
@@ -46,12 +46,10 @@ class PipelineTest {
             assertEquals("inside", inside.files().get(0).text());
 
             FakeDiscord.Request outside = requests.get(1);
-            assertEquals("outside app", outside.payload().getString("content"));
-            assertEquals("app #1", outside.embed().getString("title"));
-            assertTrue(outside.files().isEmpty());
-            FakeDiscord.Request outsideFiles = requests.get(2);
-            assertFalse(outsideFiles.payload().has("content"), "the content is not repeated in the files message");
-            assertEquals("app.jar", outsideFiles.files().get(0).filename());
+            assertEquals("outside app", outside.messageText());
+            assertEquals("app #1", outside.cardTitle());
+            assertEquals(List.of("app.jar"), outside.cardFiles());
+            assertEquals("app.jar", outside.files().get(0).filename());
             assertEquals(2, run.getAction(DevBuildAction.class).getInvocations());
         }
     }
@@ -69,12 +67,11 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(2, requests.size());
-            assertEquals("plugin.jar", requests.get(1).files().get(0).filename());
-            assertEquals("from workspace", requests.get(1).files().get(0).text());
-            String artifacts = requests.get(0).field("Artifacts").getString("value");
-            assertTrue(artifacts.startsWith("plugin.jar · 14 B"), artifacts);
+            FakeDiscord.Request request = discord.only();
+            assertEquals("plugin.jar", request.files().get(0).filename());
+            assertEquals("from workspace", request.files().get(0).text());
+            String text = request.cardText();
+            assertTrue(text.contains("**Artifacts**\nplugin.jar · 14 B"), text);
         }
     }
 
@@ -104,11 +101,10 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            List<FakeDiscord.Request> requests = discord.requests();
-            assertEquals(2, requests.size());
-            assertEquals("SUCCESS", requests.get(0).payload().getString("content"));
-            assertEquals("decl.jar", requests.get(1).files().get(0).filename());
-            assertEquals("declarative", requests.get(1).files().get(0).text());
+            FakeDiscord.Request request = discord.only();
+            assertEquals("SUCCESS", request.messageText());
+            assertEquals("decl.jar", request.files().get(0).filename());
+            assertEquals("declarative", request.files().get(0).text());
         }
     }
 
@@ -136,8 +132,68 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            assertEquals(2, discord.requests().size());
-            assertEquals("a.jar", discord.requests().get(1).files().get(0).filename());
+            assertEquals("a.jar", discord.only().files().get(0).filename());
+        }
+    }
+
+    @Test
+    void forumPostCardHoldsTheFirstTenFilesAndTheRestFollow(JenkinsRule r) throws Exception {
+        try (FakeDiscord discord = new FakeDiscord()) {
+            DiscordWebhook webhook = TestSupport.registerWebhook(discord);
+            webhook.setThreadName("Build ${BUILD_NUMBER} of ${PROJECT_NAME}");
+            webhook.setAppliedTags("111111111111111111");
+            DevBuildGlobalConfiguration.get().save();
+            WorkflowJob job = TestSupport.pipeline(r, "many", """
+                    node {
+                      for (int i = 10; i < 22; i++) {
+                        writeFile file: "libs/mod-${i}.jar", text: "jar ${i}"
+                      }
+                      archiveArtifacts 'libs/*.jar'
+                    }
+                    discordDevBuild webhookName: 'devbuilds', artifacts: [maxFiles: 15],
+                        message: [content: '<@&123456789012345678> new build', username: 'Builds',
+                                  avatarUrl: 'https://example.com/avatar.png', suppressNotifications: true, tts: true]
+                    """);
+
+            r.buildAndAssertSuccess(job);
+
+            // IN_EMBED (default): the card creates the forum post with the first 10 files inside, then 2 follow.
+            List<FakeDiscord.Request> requests = discord.requests();
+            assertEquals(2, requests.size());
+            FakeDiscord.Request first = requests.get(0);
+            JSONObject payload = first.payload();
+            assertEquals("true", first.query().get("with_components"));
+            assertFalse(first.query().containsKey("thread_id"));
+            assertEquals(FakeDiscord.COMPONENTS_V2_FLAG | 4096, payload.getInt("flags"));
+            assertFalse(payload.has("content"));
+            assertFalse(payload.has("embeds"));
+            assertFalse(payload.has("tts"), "TTS is not available for a Components V2 message");
+            assertEquals("Build 1 of many", payload.getString("thread_name"));
+            assertEquals(List.of("111111111111111111"), payload.getJSONArray("applied_tags"));
+            assertEquals("Builds", payload.getString("username"));
+            assertEquals(List.of("users", "roles"), payload.getJSONObject("allowed_mentions").getJSONArray("parse"));
+            assertEquals("<@&123456789012345678> new build", first.messageText());
+            assertEquals("many #1", first.cardTitle());
+            List<String> firstBatch = List.of("mod-10.jar", "mod-11.jar", "mod-12.jar", "mod-13.jar", "mod-14.jar",
+                    "mod-15.jar", "mod-16.jar", "mod-17.jar", "mod-18.jar", "mod-19.jar");
+            assertEquals(firstBatch, first.cardFiles());
+            assertEquals(firstBatch, first.files().stream().map(FakeDiscord.Part::filename).toList());
+            List<String> attachmentNames = payload.getJSONArray("attachments").stream()
+                    .map(a -> ((JSONObject) a).getString("filename")).toList();
+            assertEquals(firstBatch, attachmentNames);
+
+            FakeDiscord.Request followUp = requests.get(1);
+            JSONObject followUpPayload = followUp.payload();
+            assertEquals(FakeDiscord.NEW_THREAD_ID, followUp.query().get("thread_id"));
+            assertFalse(followUp.query().containsKey("with_components"));
+            assertFalse(followUpPayload.has("components"));
+            assertFalse(followUpPayload.has("thread_name"));
+            assertFalse(followUpPayload.has("content"));
+            assertEquals(4096, followUpPayload.getInt("flags"));
+            assertEquals(List.of(), followUpPayload.getJSONObject("allowed_mentions").getJSONArray("parse"));
+            assertEquals("Builds", followUpPayload.getString("username"));
+            assertEquals("https://example.com/avatar.png", followUpPayload.getString("avatar_url"));
+            assertEquals(List.of("mod-20.jar", "mod-21.jar"), followUp.files().stream().map(FakeDiscord.Part::filename).toList());
         }
     }
 
@@ -155,7 +211,7 @@ class PipelineTest {
                       }
                       archiveArtifacts 'libs/*.jar'
                     }
-                    discordDevBuild webhookName: 'devbuilds', artifacts: [maxFiles: 15],
+                    discordDevBuild webhookName: 'devbuilds', artifacts: [maxFiles: 15, placement: 'AFTER_EMBED'],
                         message: [content: '<@&123456789012345678> new build', username: 'Builds',
                                   avatarUrl: 'https://example.com/avatar.png']
                     """);
@@ -204,7 +260,8 @@ class PipelineTest {
                       writeFile file: 'build/libs/app.jar', text: 'app'
                       archiveArtifacts 'build/libs/*.jar'
                     }
-                    discordDevBuild webhookName: 'devbuilds', webhook: [threadId: '1234567890123456789']
+                    discordDevBuild webhookName: 'devbuilds', webhook: [threadId: '1234567890123456789'],
+                        artifacts: [placement: 'AFTER_EMBED']
                     """);
 
             r.buildAndAssertSuccess(job);
@@ -231,7 +288,7 @@ class PipelineTest {
                       writeFile file: 'build/libs/app.jar', text: 'app'
                       archiveArtifacts 'build/libs/*.jar'
                     }
-                    discordDevBuild webhookName: 'devbuilds'
+                    discordDevBuild webhookName: 'devbuilds', artifacts: [placement: 'AFTER_EMBED']
                     """);
 
             WorkflowRun run = r.buildAndAssertSuccess(job);
@@ -253,7 +310,7 @@ class PipelineTest {
                       writeFile file: 'build/libs/app.jar', text: 'app'
                       archiveArtifacts 'build/libs/*.jar'
                     }
-                    discordDevBuild webhookName: 'devbuilds'
+                    discordDevBuild webhookName: 'devbuilds', artifacts: [placement: 'AFTER_EMBED']
                     """);
 
             WorkflowRun run = r.buildAndAssertSuccess(job);
@@ -277,9 +334,9 @@ class PipelineTest {
 
             List<FakeDiscord.Request> requests = discord.requests();
             assertEquals(2, requests.size());
-            assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL,
-                    requests.get(0).embed().getJSONObject("thumbnail").getString("url"));
-            assertFalse(requests.get(1).embed().has("thumbnail"));
+            assertEquals(EmbedSettings.DEFAULT_THUMBNAIL_URL, requests.get(0).cardThumbnail());
+            assertNull(requests.get(1).cardThumbnail());
+            assertEquals("no-thumb #1", requests.get(1).cardTitle());
         }
     }
 
@@ -309,7 +366,7 @@ class PipelineTest {
                       archiveArtifacts 'a.jar'
                     }
                     withEnv(['GIT_COMMIT=0123456789abcdef0123', 'VERSION=2.0']) {
-                      discordDevBuild webhookName: 'devbuilds',
+                      discordDevBuild webhookName: 'devbuilds', artifacts: [placement: 'AFTER_EMBED'],
                           message: [content: '<@&42> ${PROJECT_NAME}|${BUILD_DISPLAY_NAME}|${ARTIFACTS}|${COMMIT_SHORT}|[${BRANCH}]|${UNKNOWN}',
                                     username: 'Builds for ${JOB_NAME}', mentionRoles: false, suppressNotifications: true],
                           embed: [description: 'Version $VERSION', footerText: '${FULL_DISPLAY_NAME}',
@@ -353,17 +410,15 @@ class PipelineTest {
 
             r.buildAndAssertSuccess(job);
 
-            JSONObject payload = discord.only().payload();
-            assertEquals(2000, payload.getString("content").length());
-            JSONObject embed = payload.getJSONArray("embeds").getJSONObject(0);
-            assertEquals(256, embed.getString("title").length());
-            assertTrue(embed.getString("title").endsWith("…"));
-            int total = embed.getString("title").length() + embed.optString("description").length();
-            for (Object field : embed.getJSONArray("fields")) {
-                JSONObject f = (JSONObject) field;
-                total += f.getString("name").length() + f.getString("value").length();
-            }
-            assertTrue(total <= 6000, "embed total " + total);
+            FakeDiscord.Request request = discord.only();
+            assertEquals(2000, request.messageText().length());
+            assertEquals(256, request.cardTitle().length());
+            assertTrue(request.cardTitle().endsWith("…"));
+            List<String> texts = request.cardTexts();
+            int total = request.messageText().length() + texts.stream().mapToInt(String::length).sum();
+            assertTrue(total <= 4000, "component text total " + total);
+            assertTrue(texts.stream().anyMatch(t -> t.startsWith("xxx") && t.endsWith("…")),
+                    "the description is shortened to fit");
         }
     }
 
@@ -380,8 +435,8 @@ class PipelineTest {
 
             r.assertLogContains("Not posting to Discord: notifyOnAborted is off", run);
             FakeDiscord.Request request = discord.only();
-            assertEquals(0x95A5A6, request.embed().getInt("color"));
-            assertEquals("Aborted", request.field("Result").getString("value"));
+            assertEquals(0x95A5A6, request.card().getInt("accent_color"));
+            assertTrue(request.cardText().contains("**Result:** Aborted"), request.cardText());
         }
     }
 
@@ -400,7 +455,7 @@ class PipelineTest {
             assertEquals(1, discord.requests().size());
             r.buildAndAssertSuccess(job);
             assertEquals(2, discord.requests().size(), "back to normal must be posted");
-            assertEquals("Success", discord.requests().get(1).field("Result").getString("value"));
+            assertTrue(discord.requests().get(1).cardText().contains("**Result:** Success"));
             WorkflowRun third = r.buildAndAssertSuccess(job);
             assertEquals(2, discord.requests().size(), "plain success must not be posted");
             r.assertLogContains("notifyOnSuccess is off", third);
@@ -425,7 +480,7 @@ class PipelineTest {
 
             assertEquals(2, discord.requests().size());
             r.assertLogContains("branch 'feature/x' does not match branchPattern", run);
-            assertEquals("`release/1.0`", discord.requests().get(1).field("Branch").getString("value"));
+            assertTrue(discord.requests().get(1).cardText().contains("**Branch:** `release/1.0`"));
         }
     }
 
@@ -470,7 +525,7 @@ class PipelineTest {
             TestSupport.registerWebhook(discord);
             WorkflowJob job = TestSupport.pipeline(r, "snippet", snippet);
             r.buildAndAssertSuccess(job);
-            assertEquals("Dev build 1", discord.only().embed().getString("title"));
+            assertEquals("Dev build 1", discord.only().cardTitle());
         }
 
         WorkflowJob job = TestSupport.pipeline(r, "syntax", "echo 'hi'");

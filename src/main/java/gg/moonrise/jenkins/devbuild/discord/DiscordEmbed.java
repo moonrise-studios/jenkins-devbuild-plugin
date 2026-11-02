@@ -14,7 +14,7 @@ import java.util.Map;
 public final class DiscordEmbed {
 
     /** Zero width space: Discord rejects empty field names and values. */
-    private static final String EMPTY_FIELD = "​";
+    public static final String EMPTY_FIELD = "​";
 
     private String title;
     private String description;
@@ -106,8 +106,46 @@ public final class DiscordEmbed {
     }
 
     @CheckForNull
+    public String getUrl() {
+        return url;
+    }
+
+    @CheckForNull
+    public Integer getColor() {
+        return color;
+    }
+
+    /**
+     * The ISO-8601 timestamp, as given.
+     */
+    @CheckForNull
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    @CheckForNull
+    public String getAuthorName() {
+        return authorName;
+    }
+
+    @CheckForNull
+    public String getAuthorUrl() {
+        return authorUrl;
+    }
+
+    @CheckForNull
     public String getFooterText() {
         return footerText;
+    }
+
+    @CheckForNull
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
+    }
+
+    @CheckForNull
+    public String getImageUrl() {
+        return imageUrl;
     }
 
     @NonNull
