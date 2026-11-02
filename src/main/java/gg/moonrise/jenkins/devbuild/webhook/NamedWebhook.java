@@ -1,4 +1,4 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.webhook;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;

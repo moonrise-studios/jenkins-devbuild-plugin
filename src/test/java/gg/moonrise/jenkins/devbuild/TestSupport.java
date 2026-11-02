@@ -2,6 +2,9 @@ package gg.moonrise.jenkins.devbuild;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import gg.moonrise.jenkins.devbuild.config.DevBuildGlobalConfiguration;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
+import gg.moonrise.jenkins.devbuild.webhook.NamedWebhook;
 import hudson.util.Secret;
 import java.io.IOException;
 import java.util.ArrayList;

@@ -7,12 +7,26 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cloudbees.hudson.plugins.folder.Folder;
+import gg.moonrise.jenkins.devbuild.build.DevBuildPublisher;
+import gg.moonrise.jenkins.devbuild.config.DevBuildFolderProperty;
+import gg.moonrise.jenkins.devbuild.config.DevBuildGlobalConfiguration;
+import gg.moonrise.jenkins.devbuild.config.DevBuildJobProperty;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSource;
+import gg.moonrise.jenkins.devbuild.settings.EmbedField;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.FilePlacement;
+import gg.moonrise.jenkins.devbuild.settings.MessageSettings;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
+import gg.moonrise.jenkins.devbuild.settings.OversizePolicy;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
+import gg.moonrise.jenkins.devbuild.webhook.NamedWebhook;
 import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
-import jenkins.model.Jenkins;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -204,7 +218,8 @@ class ConfigRoundtripTest {
         r.assertEqualDataBoundBeans(conditions(), after.getConditions());
         assertEquals(12, after.getTimeoutSeconds());
         assertEquals(5, after.getMaxRetries());
-        String xml = Files.readString(r.jenkins.getRootDir().toPath().resolve(DevBuildGlobalConfiguration.class.getName() + ".xml"),
+        String xml = Files.readString(
+                r.jenkins.getRootDir().toPath().resolve("gg.moonrise.jenkins.devbuild.DevBuildGlobalConfiguration.xml"),
                 StandardCharsets.UTF_8);
         assertFalse(xml.contains("very-secret-token"));
         assertTrue(xml.contains("<webhookUrl>{"), "secret should be stored encrypted");

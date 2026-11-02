@@ -2,8 +2,8 @@ package gg.moonrise.jenkins.devbuild.publish;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import gg.moonrise.jenkins.devbuild.DevBuildGlobalConfiguration;
-import gg.moonrise.jenkins.devbuild.DiscordWebhook;
+import gg.moonrise.jenkins.devbuild.config.DevBuildGlobalConfiguration;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
 import gg.moonrise.jenkins.devbuild.discord.DiscordClient;
 import gg.moonrise.jenkins.devbuild.discord.DiscordEmbed;
 import gg.moonrise.jenkins.devbuild.discord.DiscordResponse;

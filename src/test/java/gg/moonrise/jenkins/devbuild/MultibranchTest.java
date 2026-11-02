@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import gg.moonrise.jenkins.devbuild.config.DevBuildFolderProperty;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import jenkins.branch.BranchSource;

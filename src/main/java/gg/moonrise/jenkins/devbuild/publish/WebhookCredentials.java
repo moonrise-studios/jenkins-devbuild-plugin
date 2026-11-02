@@ -3,7 +3,7 @@ package gg.moonrise.jenkins.devbuild.publish;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import gg.moonrise.jenkins.devbuild.DiscordWebhook;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
 import gg.moonrise.jenkins.devbuild.discord.WebhookUrls;
 import hudson.AbortException;
 import hudson.model.Item;

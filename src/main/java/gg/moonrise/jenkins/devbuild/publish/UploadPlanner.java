@@ -1,7 +1,7 @@
 package gg.moonrise.jenkins.devbuild.publish;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import gg.moonrise.jenkins.devbuild.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
 import gg.moonrise.jenkins.devbuild.discord.DiscordLimits;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;
 import hudson.AbortException;

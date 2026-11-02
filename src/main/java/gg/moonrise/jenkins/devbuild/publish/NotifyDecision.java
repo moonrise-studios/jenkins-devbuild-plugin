@@ -2,7 +2,7 @@ package gg.moonrise.jenkins.devbuild.publish;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import gg.moonrise.jenkins.devbuild.NotifyConditions;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;
 import hudson.model.Result;
 import java.util.regex.Pattern;

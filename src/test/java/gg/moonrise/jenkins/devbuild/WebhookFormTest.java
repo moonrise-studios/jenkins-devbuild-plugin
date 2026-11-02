@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import gg.moonrise.jenkins.devbuild.publish.WebhookTester;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
+import gg.moonrise.jenkins.devbuild.webhook.DiscordWebhook;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
 import hudson.util.FormValidation;
@@ -27,7 +30,7 @@ import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 @WithJenkins
 class WebhookFormTest {
 
-    private static final String DESCRIPTOR = "descriptorByName/gg.moonrise.jenkins.devbuild.DiscordWebhook/";
+    private static final String DESCRIPTOR = "descriptorByName/" + DiscordWebhook.class.getName() + "/";
 
     private static WebResponse post(JenkinsRule.WebClient wc, JenkinsRule r, String path, List<NameValuePair> params)
             throws Exception {

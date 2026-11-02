@@ -1,13 +1,20 @@
-package gg.moonrise.jenkins.devbuild;
+package gg.moonrise.jenkins.devbuild.config;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import gg.moonrise.jenkins.devbuild.settings.ArtifactSettings;
+import gg.moonrise.jenkins.devbuild.settings.EmbedSettings;
+import gg.moonrise.jenkins.devbuild.settings.MessageSettings;
+import gg.moonrise.jenkins.devbuild.settings.NotifyConditions;
 import gg.moonrise.jenkins.devbuild.util.TextUtils;
+import gg.moonrise.jenkins.devbuild.webhook.NamedWebhook;
 import hudson.BulkChange;
 import hudson.Extension;
 import hudson.ExtensionList;
+import hudson.XmlFile;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +38,12 @@ public final class DevBuildGlobalConfiguration extends GlobalConfiguration {
     public static final int DEFAULT_TIMEOUT_SECONDS = 30;
     public static final int DEFAULT_MAX_RETRIES = 3;
 
+    /**
+     * File name used by releases up to 1.2.1, when the descriptor id was the old root-package class name. Kept so
+     * existing installations keep their settings after the package move.
+     */
+    private static final String CONFIG_FILE_NAME = "gg.moonrise.jenkins.devbuild.DevBuildGlobalConfiguration.xml";
+
     private List<NamedWebhook> webhooks = new ArrayList<>();
     private String defaultWebhookName;
     private MessageSettings message;
@@ -42,6 +55,16 @@ public final class DevBuildGlobalConfiguration extends GlobalConfiguration {
 
     public DevBuildGlobalConfiguration() {
         load();
+    }
+
+    /**
+     * Keeps the original file name instead of the default {@code <descriptor id>.xml}. Reads through
+     * {@link Jenkins#XSTREAM2} so the compatibility aliases for the old class names apply. Only uses static state, so
+     * it is safe to call from {@code load()} in the constructor.
+     */
+    @Override
+    protected XmlFile getConfigFile() {
+        return new XmlFile(Jenkins.XSTREAM2, new File(Jenkins.get().getRootDir(), CONFIG_FILE_NAME));
     }
 
     @NonNull
